@@ -1,0 +1,208 @@
+<document title="Crosses">
+<define name="version" value="1.10">
+<define name="date" value="6 December 2002" length=25 align="right">
+
+
+
+
+
+<literal mode="Text">
+=============================================================================
+Clipboard - A Global Clipboard utility                           Version $$version$$
+
+(c) Thomas Leonard, 1999 (32-bit by Stephen Fryatt) $$date$$
+=============================================================================
+</literal>
+
+
+
+
+
+<chapter title="License" file="License">
+
+<cite>Clipboard</cite> is in the public domain and may be freely copied.
+
+</chapter>
+
+
+
+
+<chapter title="Introduction" file="Intro">
+
+The global clipboard provides a way of transferring data between applications. You select the data in one application and cut or copy it onto the clipboard (usually using <key>Ctrl-X</key> and <key>Ctrl-C</key>). You then move to the other application and paste the data from the clipboard (usually <key>Ctrl-V</key>).
+
+<cite>Clipboard</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipboard</cite> to put that file on the clipboard.
+
+The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipboard</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/software/clipboard/">http://www.stevefryatt.org.uk/software/clipboard/</link>.
+
+The <cite>Clipboard</cite> utility and <cite>IcnClipBrd</cite> module were originally written by Thomas Leonard, and have been converted to 32-bit for use on RISC&nbsp;OS&nbsp;5 by myself (Stephen Fryatt). I would like to thank Thomas for allowing his code to be placed in the Public Domain; any problems encountered using the updated application and module are likely to be my fault and should be reported first to the address below.
+
+</chapter>
+
+
+
+
+<chapter title="Installation" file="Install">
+
+To use <cite>Clipboard</cite>, simply run it from a Filer window. If you always want it on the iconbar, it can be included in the list of applications to be run at startup in the <icon>Boot</icon> section of Configure.
+
+</chapter>
+
+
+
+
+<chapter title="Using Clipboard" file="Use">
+
+Once <cite>Clipboard</cite> is loaded, it will install an icon on the icon bar. Click <mouse>select</mouse> on this icon to open the <window>Save clipboard</window> window. If there is anything on the clipboard then you will be able to drag the icon to a directory or to another application to save the clipboard. You can put a file onto the clipboard by dragging it to this window.
+
+If you toggle the window size then you can see an extra box which indicates what <cite>Clipboard</cite> is doing. This may be helpful for programmers trying to work out why their program doesn&rsquo;t work with <cite>Clipboard</cite>. Note that the problem may well be <cite>Clipboard</cite>&rsquo;s fault!
+
+</chapter>
+
+
+
+
+<chapter title="Other information" file="Other">
+
+<cite>Clipboard</cite> was written by Thomas Leonard. The 32-bit conversion was done by Stephen Fryatt.
+
+</chapter>
+
+
+
+
+<chapter title="History" file="History">
+
+<subhead title="Version 0.01 (20 October 1996)">
+
+<list>
+<li>Main window shows type and owner of clipboard and allows user to put things on the clipboard by dragging to the window.
+</list>
+
+
+<subhead title="Version 0.02 (21 October 1996)">
+
+<list>
+<li>Added menu and info window.
+<li>User can save clipboard to filer or to another app (lots of fun with <code>Wimp_SendMessage</code>!).
+</list>
+
+
+<subhead title="Version 0.03 (22 October 1996)">
+
+<list>
+<li>Wrote most of <cite>IcnClipBrd</cite> including transfer of clipboard via <code>Wimp$Scrap</code> and sending using RAM transfer (but not yet receiving data this way).
+</list>
+
+
+<subhead title="Version 0.04 (23 October 1996)">
+
+<list>
+<li>Added support for RAM fetch, but had to remove it because it didn&rsquo;t work with some programs which close all menus when you use RAM transfer!
+</list>
+
+
+<subhead title="Version 0.05 (08 September 1998)">
+
+<list>
+<li>Made WimpSlot 36K, as someone said it wouldn't run on their computer with 32K. Changed the window layout to make the Owner box bigger.
+<li>Fixed serious bug &ndash; didn&rsquo;t work if &lt;Wimp$Scrap&gt; already existed!
+</list>
+
+
+<subhead title="Version 0.06 (15 September 1998)">
+
+<list>
+<li>Made WimpSlot 40K, as someone else still couldn&rsquo;t run it!
+<li>Removed Shift from all the <cite>IcnClipBrd</cite> key-combos.
+<li>Added protocol status report box, and made it work better with <cite>Zap</cite> (though still not perfect).
+</list>
+
+
+<subhead title="Version 0.07 (17 September 1998)">
+
+<list>
+<li>Doesn&rsquo;t bring the window to the front when an error occurs unless the window was already open.
+<li>Fixed protocol bug &ndash; window handle and icon handle got corrupted when dragging a file owned by one application to another application.
+</list>
+
+
+<subhead title="Version 0.08 (17 September 1998)">
+
+<list>
+<li>Now acks <code>Message_DataLoad</code> when copying from one task to another, since the clipboard owner could decide that the receiver had died and delete the scrap file.
+<li>Bugfix: <cite>IcnClipBrd</cite> treated any <code>Claim_Entity</code> message as a claim for the global clipboard.
+</list>
+
+
+<subhead title="Version 0.09 (24 July 1999)">
+
+<list>
+<li>Added <key>Ctrl-E</key> and <key>Ctrl-K</key> keys to <cite>IcnClipBrd</cite>; requested by Bob Pollard and Stewy.
+</list>
+
+
+<subhead title="Version 0.10 (04 August 1999)">
+
+<list>
+<li>Fixed bug in pasting routines &ndash; top-bit-set chars didn&rsquo;t have a leading zero byte added.
+</list>
+
+
+<subhead title="Version 0.11 (07 July 2004)">
+
+Updated by Stephen Fryatt
+
+<list>
+<li>Included 32-bit version of the <cite>IcnClipBrd</cite> module.
+</list>
+
+
+<subhead title="Version 0.12 (05 March 2005)">
+
+Updated by Stephen Fryatt and Kell Gatherer
+
+<list>
+<li>Added documentation links to iconbar menu and <window>Program info</window> window.
+</list>
+
+
+<subhead title="Version 0.13 (04 August 2007)">
+
+Updated by Stephen Fryatt
+
+<list>
+<li>Included <cite>IcnClipBrd</cite> 0.11.
+</list>
+
+
+<subhead title="Version 0.14 (08 August 2007)">
+
+Updated by Stephen Fryatt
+
+<list>
+<li><cite>IcnClipBrd</cite> module removed from </cite>Clipboard</cite>, and supplied separately to simplify future updates.
+</list>
+
+</chapter>
+
+
+
+
+<literal mode="Text">
+
+
+Updates and Contacting Me
+-------------------------
+
+  If you have any comments about the 32-bit version of Clipboard and
+  IcnClipBrd, or would like to report any bugs that you find, you can email
+  me at the address below.
+  
+  Any updates to the module will be made available on my website, at
+  http://www.stevefryatt.org.uk/software/clipboard/
+
+  Stephen Fryatt
+  email: steve@stevefryatt.org.uk
+</literal>
+
