@@ -2,6 +2,11 @@ REM >Prog:!Clipboard.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
+REM These values get replaced by tokenize.
+
+build_version$ = "1.10"
+build_date$ = "01 Jul 2009"
+
 ON ERROR ERROR EXT ERR, REPORT$+" (error code "+STR$ ERL+")"
 
 DIM scrap 256,q% 256
@@ -22,6 +27,12 @@ SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
 DIM indbuf IndSize%
 SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
 SYS "Wimp_CreateWindow",,block TO MainWindow%
+block!0=InfoWindow%
+block!4=4
+SYS "Wimp_GetIconState",,block
+Addr%=block!28
+Size%=block!36
+$Addr%=LEFT$(build_version$+" ("+build_date$+")",Size%-1)
 block!0=-1
 block!4=0
 block!8=0
