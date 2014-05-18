@@ -184,6 +184,15 @@ Updated by Stephen Fryatt
 <li><cite>IcnClipBrd</cite> module removed from </cite>Clipboard</cite>, and supplied separately to simplify future updates.
 </list>
 
+
+<subhead title="Test Build">
+
+Development release for testing and feedback.
+
+<list>
+<li>Converted source to generic build system usning Tokenize.
+</list>
+
 </chapter>
 
 
