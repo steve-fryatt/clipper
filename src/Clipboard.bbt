@@ -267,8 +267,8 @@ CASE Window% OF
   WHEN -2         : PROCtoggle(MainWindow%)
   WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNread_data(3),-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
-  WHEN InfoWindow%: IF block!16=5 THEN PROClaunch_url("mailto:steve@stevefryatt.org.uk")
-                    IF block!16=6 THEN PROClaunch_url("http://www.stevefryatt.org.uk/software/clipboard/")
+  WHEN InfoWindow%: IF block!16=5 THEN PROCurl_launch("mailto:steve@stevefryatt.org.uk")
+                    IF block!16=6 THEN PROCurl_launch("http://www.stevefryatt.org.uk/software/clipboard/")
 ENDCASE
 ENDPROC
 
@@ -494,11 +494,11 @@ REM ============================================================================
 :
 :
 :
-DEF PROClaunch_url(url$)
+DEF PROCurl_launch(url$)
 :
 REM Launch an URL.
 :
-IF FNant_broadcast(url$) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+IF FNurl_ant_broadcast(url$) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
 ENDPROC
 :
 :
@@ -521,11 +521,11 @@ CASE message%!16 OF
    SYS "URI_RequestURI",0,q%,255,message%!24 TO ,,len%
    q%?len%=13
    :
-   IF FNant_load($q%) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+   IF FNurl_ant_load($q%) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
   ENDIF
  WHEN &4AF80 : REM Message_ANTOpenURL
-  IF FNuri_dispatch(message%+20) THEN
-   IF FNant_load(FNctrl_string(message%+20)) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+  IF FNurl_uri_dispatch(message%+20) THEN
+   IF FNurl_ant_load(FNctrl_string(message%+20)) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
   ENDIF
 ENDCASE
 ENDPROC
@@ -538,7 +538,7 @@ REM ============================================================================
 :
 :
 :
-DEF FNant_broadcast(url$)
+DEF FNurl_ant_broadcast(url$)
 :
 REM Try the ANT Bradcast method and wait for a reply or a bounce.
 :
@@ -560,7 +560,7 @@ REM ----------------------------------------------------------------------------
 :
 :
 :
-DEF FNuri_dispatch(url%)
+DEF FNurl_uri_dispatch(url%)
 :
 REM Try to displatch the URL through the Acorn URI system.
 :
@@ -582,7 +582,7 @@ REM ----------------------------------------------------------------------------
 :
 :
 :
-DEF FNant_load(url$)
+DEF FNurl_ant_load(url$)
 :
 REM Try to launch a client using the ANT protocol.
 :
