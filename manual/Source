@@ -193,6 +193,7 @@ Updated by Stephen Fryatt
 <list>
 <li>Converted source to generic build system usning Tokenize.
 <li>Fixed broken code in URI dispatch, including adding missing error handling routines.
+<li>Correctly close Templates file after use.
 </list>
 
 </chapter>

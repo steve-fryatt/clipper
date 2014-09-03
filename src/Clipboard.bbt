@@ -27,6 +27,7 @@ SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
 DIM indbuf IndSize%
 SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
 SYS "Wimp_CreateWindow",,block TO MainWindow%
+SYS "Wimp_CloseTemplate"
 block!0=InfoWindow%
 block!4=4
 SYS "Wimp_GetIconState",,block
