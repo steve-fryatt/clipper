@@ -498,7 +498,7 @@ DEF PROCurl_launch(url$)
 :
 REM Launch an URL.
 :
-IF FNurl_ant_broadcast(url$) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+IF FNurl_ant_broadcast(url$) THEN PROCreport("Could not find an application to launch the given URL")
 ENDPROC
 :
 :
@@ -513,7 +513,7 @@ DEF PROCurl_bounce(message%)
 :
 REM Generic handler to deal with the two Wimp Messages we care about.
 :
-LOCAL len%, result%
+LOCAL len%, result%, url$
 :
 CASE message%!16 OF
  WHEN &4E383 : REM Message_URIReturnResult
@@ -521,11 +521,12 @@ CASE message%!16 OF
    SYS "URI_RequestURI",0,q%,255,message%!24 TO ,,len%
    q%?len%=13
    :
-   IF FNurl_ant_load($q%) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+   IF FNurl_ant_load($q%) THEN PROCreport("Could not find an application to launch the given URL")
   ENDIF
  WHEN &4AF80 : REM Message_ANTOpenURL
-  IF FNurl_uri_dispatch(message%+20) THEN
-   IF FNurl_ant_load(FNctrl_string(message%+20)) THEN PROCwimp_report(FNmessage_trans("URLFailed"),1,%01,"")
+  SYS "XOS_GenerateError", message% + 20 TO url$
+  IF FNurl_uri_dispatch(url$) THEN
+   IF FNurl_ant_load(url$) THEN PROCreport("Could not find an application to launch the given URL")
   ENDIF
 ENDCASE
 ENDPROC
@@ -560,7 +561,7 @@ REM ----------------------------------------------------------------------------
 :
 :
 :
-DEF FNurl_uri_dispatch(url%)
+DEF FNurl_uri_dispatch(url$)
 :
 REM Try to displatch the URL through the Acorn URI system.
 :
@@ -569,7 +570,7 @@ LOCAL flags%, task%
 SYS "XOS_SWINumberFromString",,"URI_Dispatch" TO ;flags%
 IF (flags% AND 1)=0 THEN
  SYS "Wimp_ReadSysInfo",5 TO task%
- SYS "XURI_Dispatch",1,url%,task% TO ;flags%
+ SYS "XURI_Dispatch",1,url$,task% TO ;flags%
 ENDIF
 :
 =(flags% AND 1)=1
