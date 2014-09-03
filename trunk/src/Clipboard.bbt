@@ -1,0 +1,605 @@
+REM >Prog:!Clipboard.!RunImage
+REM
+REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
+
+REM These values get replaced by tokenize.
+
+build_version$ = "1.10"
+build_date$ = "01 Jul 2009"
+
+ON ERROR ERROR EXT ERR, REPORT$+" (error code "+STR$ ERL+")"
+
+DIM scrap 256,q% 256
+InternalHandle% = -&11223344
+
+DIM TASK 5,temp_name 12, menu_block 28+24*3
+$TASK="TASK"
+SYS "Wimp_Initialise",200,!TASK,"Clipboard" TO ,Handle%
+SYS "Wimp_OpenTemplate",,"<Obey$Dir>.Templates"
+DIM block 1024
+$temp_name="Info"
+SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
+DIM indbuf IndSize%
+SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
+SYS "Wimp_CreateWindow",,block TO InfoWindow%
+$temp_name="Main"
+SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
+DIM indbuf IndSize%
+SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
+SYS "Wimp_CreateWindow",,block TO MainWindow%
+SYS "Wimp_CloseTemplate"
+block!0=InfoWindow%
+block!4=4
+SYS "Wimp_GetIconState",,block
+Addr%=block!28
+Size%=block!36
+$Addr%=LEFT$(build_version$+" ("+build_date$+")",Size%-1)
+block!0=-1
+block!4=0
+block!8=0
+block!12=76
+block!16=68
+block!20=%11000000011010
+$(block+24)="!Clipboard"
+SYS "Wimp_CreateIcon",,block
+SaveDragTo%=-1
+Quit%=FALSE:Owner%=-1:OurFile$="":SaveRef%=-1:SaveDragRef%=-1
+PROCinit_menu
+PROCexamine_clipboard
+REPEAT
+  SYS "Wimp_Poll",%110001,block TO Reason%
+  CASE Reason% OF
+    WHEN 2     : SYS "Wimp_OpenWindow",,block
+    WHEN 3     : SYS "Wimp_CloseWindow",,block
+    WHEN 6     : IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
+    WHEN 7     : PROCuser_drag_box
+    WHEN 8     : IF block!24=13 THEN
+                   PROCsave_clipboard(FNread_data(3),TRUE,FALSE)
+                 ELSE
+                   IF block!24=&1B THEN
+                     PROCclose(MainWindow%)
+                   ELSE
+                     SYS "Wimp_ProcessKey", block!24
+                   ENDIF
+                 ENDIF
+    WHEN 9     : IF block!0=1 THEN OSCLI("Filer_Run <Clipboard$Dir>.!Help")
+                 IF block!0=2 THEN Quit%=TRUE
+    WHEN 17,18 : PROCmessage(block!16)
+    WHEN 19    : PROCack
+  ENDCASE
+UNTIL Quit%
+SYS "Wimp_CloseDown",Handle%,!TASK
+SYS "OS_Exit"
+END
+
+DEF PROCmessage(Code%)
+CASE Code% OF
+  WHEN 0   : Quit%=TRUE
+  WHEN 1   : IF block!12=SaveRef% THEN PROCsave_ack_to(SavePath$):ENDPROC
+             IF block!12=MyRef% OR block!24=InternalHandle% THEN
+               IF block!12<>MyRef% THEN
+                 PROCpe("Bad yourref in DataSave message")
+               ELSE
+                 IF block!24<>InternalHandle% THEN
+                   PROCpe("Bad handle in DataSave message")
+                 ELSE
+                   PROCproto("Found owner")
+                 ENDIF
+               ENDIF
+
+               PROCset_text(3,FNstrip(block+44))
+               PROCset_text(6,FNname(block!4)):Owner%=block!4
+               Type$=STR$~block!40
+               PROCset_text(2,FNtype(Type$))
+               PROCset_ind(0,"sfile_"+Type$+";r2")
+               SYS "Wimp_GetCaretPosition",,block
+               IF block!0=MainWindow% THEN PROCput_caret(block)
+               PROCunshade(3):PROCunshade(0):PROCunshade(4)
+               PROCunshade(6):PROCunshade(2)
+             ENDIF
+  WHEN 2   : IF block!12=SaveDragRef% THEN
+               REM Dragged-to app wants the file - grab it from clip owner
+               SaveDragRef%=block!8
+
+               REM Ack the message whatever happens
+               block!12 = SaveDragRef%
+               SYS "Wimp_SendMessage", 19, block, block!4
+
+               PROCsave_clipboard(FNstrip(block+44),FALSE,TRUE)
+               IF Owner%=Handle% THEN
+                 REM We own it - ack now.
+                 PROCsend_save_ack
+               ENDIF
+             ELSE
+               PROCcopy(OurFile$, FNstrip(block + 44))
+               Request%=block!4
+               block!12=block!8
+               block!16=3
+               SYS "XOS_File",23,OurFile$ TO Ob%,,,,Size%,,Type% ;Flags%
+               IF (Flags% AND %1) OR Ob%<>1 THEN
+                 PROCpe("Bad clipboard file")
+               ELSE
+                 block!36=Size%
+                 block!40=Type%
+                 SYS "Wimp_SendMessage",17,block,Request%
+               ENDIF
+             ENDIF
+  WHEN 3   : IF (block!12)=SaveRef% THEN
+               IF SaveDragTo%<>-1 THEN
+                 SaveDragFrom%=block!4
+                 SaveFromRef%=block!8
+
+                 REM Ack the message
+                 block!12 = block!8
+                 SYS "Wimp_SendMessage", 19, block, SaveDragFrom%
+
+                 block!12=SaveDragRef% : REM Pass message on to dest app
+                 SYS "Wimp_SendMessage",18,block,SaveDragTo%
+                 SaveDragRef%=block!8
+                 PROCproto("Asking app to load data")
+               ENDIF
+             ELSE
+               PROCclaim_clipboard
+               OurFile$=FNstrip(block+44)
+               PROCset_text(3,OurFile$)
+               PROCset_text(6,"Clipboard"):Owner%=Handle%
+               PROCproto("I own it")
+               Type$=STR$~block!40
+               PROCset_text(2,FNtype(Type$))
+               PROCset_ind(0,"sfile_"+Type$+";r2")
+               SYS "Wimp_GetCaretPosition",,block
+               IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
+               PROCunshade(3):PROCunshade(0):PROCunshade(4)
+               PROCunshade(6):PROCunshade(2):PROCfront(MainWindow%)
+             ENDIF
+  WHEN 4   : IF SaveDragTo%<>-1 THEN
+               block!12=SaveFromRef%
+               SYS "Wimp_SendMessage",17,block,SaveDragFrom%
+               SaveDragTo%=-1
+             ENDIF
+  WHEN &F  : IF ((block!20) AND 4) THEN
+               IF block!4<>Handle% THEN Owner%=-1:PROCexamine_clipboard
+             ENDIF
+  WHEN &10 : IF MyRef%<>block!8 THEN
+               IF Owner%=Handle% THEN
+                 PROCproto("Sending data myself")
+                 Request%=block!4
+                 block!12=block!8
+                 SYS "Wimp_SendMessage",19,block
+                 SYS "XOS_File",23,OurFile$ TO Ob%,,,,Size%,,Type% ;Flags%
+                 IF (Flags% AND %1) OR Ob%<>1 THEN
+                   PROCreport("Bad clipboard file")
+                 ELSE
+                   block!36=Size%
+                   block!16=1
+                   block!40=Type%
+                   Leaf$=FNleaf(OurFile$)
+                   $(block+44)=Leaf$+CHR$0
+                   block!0=44+(LEN(Leaf$)+4)AND&FC
+                   SYS "Wimp_SendMessage",17,block,Request%
+                 ENDIF
+               ENDIF
+             ENDIF
+ENDCASE
+ENDPROC
+
+DEF PROCack
+IF block!16=&4E383 OR block!16=&4AF80 THEN PROCurl_bounce(block):ENDPROC
+IF block!16=4 THEN PROCpe("Receiver died!"):SaveDragTo%=-1:ENDPROC
+IF block!8=SaveDragRef% THEN PROCproto("App not interested"):ENDPROC
+IF block!8<>MyRef% THEN ENDPROC
+IF block!16<>&10 THEN ENDPROC
+PROCset_text(3,"None")
+PROCset_text(6,"-"):Owner%=-1:PROCproto("No clipboard")
+PROCset_text(2,"-")
+Type$="xxx"
+PROCset_ind(0,"sfile_xxx;r2")
+SYS "Wimp_GetCaretPosition",,block
+IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
+PROCshade(3):PROCshade(0):PROCshade(4)
+PROCunshade(6):PROCunshade(2)
+ENDPROC
+
+DEF PROCexamine_clipboard
+IF Owner%=Handle% THEN ENDPROC
+block!0=44
+block!12=0
+block!16=&10
+block!20=MainWindow%
+block!24=InternalHandle% : REM Help find protocol errors.
+block!36=4
+block!40=-1
+SYS "Wimp_SendMessage",18,block,0
+MyRef%=block!8
+PROCproto("Looking for owner")
+ENDPROC
+
+DEF PROCput_caret(b)
+SYS "Wimp_SetCaretPosition",b!0,b!4,b!8,b!12,b!16,b!20
+ENDPROC
+
+DEF FNname(Handle%)
+SYS "XTaskManager_TaskNameFromHandle",Handle% TO NamePtr% ;Flags%
+IF Flags% AND 1 THEN ="???"
+=FNstrip(NamePtr%)
+
+DEF FNstrip(Addr%)
+LOCAL A$
+A$=""
+WHILE ?Addr%>31
+  A$+=CHR$(?Addr%)
+  Addr%+=1
+ENDWHILE
+=A$
+
+DEF PROCset_text(Icon%,Text$)
+block!512=MainWindow%
+block!516=Icon%
+SYS "Wimp_GetIconState",,block+512
+Addr%=block!(28+512)
+Size%=block!(36+512)
+$Addr%=LEFT$(Text$,Size%-1)
+ENDPROC
+
+DEF FNread_data(Icon%)
+block!512=MainWindow%
+block!516=Icon%
+SYS "Wimp_GetIconState",,block+512
+=FNstrip(block!(28+512))
+
+DEF PROCset_ind(Icon%,Text$)
+IF LEN(Text$)<>12 THEN Text$="sfile_xxx;r2"
+block!512=MainWindow%
+block!516=Icon%
+SYS "Wimp_GetIconState",,block+512
+Addr%=block!(32+512)
+$Addr%=Text$
+ENDPROC
+
+DEF FNtype(Hex$)
+SYS "XOS_ReadVarVal","File$Type_"+Hex$,block+512,512,0,3 TO ,,Len%;Flags%
+IF Flags% AND 1 THEN =Hex$
+block?(Len%+512)=0
+=FNstrip(block+512)
+
+DEF PROCmouse_click
+Window%=block!12
+CASE Window% OF
+  WHEN -2         : PROCtoggle(MainWindow%)
+  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNread_data(3),-1,0)
+                    IF block!16=0 THEN PROCdrag_icon(0)
+  WHEN InfoWindow%: IF block!16=5 THEN PROCurl_launch("mailto:steve@stevefryatt.org.uk")
+                    IF block!16=6 THEN PROCurl_launch("http://www.stevefryatt.org.uk/software/clipboard/")
+ENDCASE
+ENDPROC
+
+DEF PROCmenu
+IF block!12=-2 THEN Height%=96+44*3 ELSE Height%=block!4+48
+SYS "Wimp_CreateMenu",,menu_block,block!0-48,Height%
+ENDPROC
+
+DEF PROCfront(Window%)
+block!512=Window%
+SYS "Wimp_GetWindowState",,block+512
+block!(512+28)=-1
+SYS "Wimp_OpenWindow",,block+512
+PROCput_caret_in(3)
+ENDPROC
+
+DEF PROCclose(Window%)
+block!512=Window%
+SYS "Wimp_CloseWindow",,block+512
+ENDPROC
+
+DEF PROCtoggle(Window%)
+block!512=Window%
+SYS "Wimp_GetWindowState",,block+512
+IF block!(512+32) AND (1<<17) THEN
+  SYS "Wimp_CloseWindow",,block+512
+ELSE
+  block!(512+28)=-1
+  SYS "Wimp_OpenWindow",,block+512
+  PROCput_caret_in(3)
+  PROCexamine_clipboard
+ENDIF
+ENDPROC
+
+DEF PROCshade(Icon%)
+block!512=MainWindow%
+block!516=Icon%
+block!520=1<<22
+block!524=1<<22
+SYS "Wimp_SetIconState",,block+512
+ENDPROC
+
+DEF PROCunshade(Icon%)
+block!512=MainWindow%
+block!516=Icon%
+block!520=0
+block!524=1<<22
+SYS "Wimp_SetIconState",,block+512
+ENDPROC
+
+DEF PROCclaim_clipboard
+bk=block+512
+!bk=24
+bk!12=0
+bk!16=&f
+bk!20=%100
+SYS "Wimp_SendMessage",18,bk,0
+ENDPROC
+
+DEF PROCreport(Error$)
+block!512=0
+$(block+516)=Error$
+SYS "Wimp_ReportError",block+512,%101,"Clipboard"
+ENDPROC
+
+DEF FNleaf(Text$)
+Dot%=0
+FOR A%=1 TO LEN(Text$)
+  IF MID$(Text$,A%,1)="." THEN Dot%=A%
+NEXT A%
+=MID$(Text$,Dot%+1)
+
+DEF PROCsave_clipboard(S$,Check%,UseWindow%)
+SavePath$=S$
+IF Check% AND INSTR(SavePath$,".")=0 THEN PROCreport("To save, drag icon to a directory viewer"):ENDPROC
+IF Owner%=Handle% THEN PROCcopy(OurFile$, SavePath$):ENDPROC
+block!0=44
+block!12=0
+block!16=&10 : REM Request clipboard data
+IF UseWindow% = FALSE THEN
+  block!20=-3
+  block!24=InternalHandle%
+  block!28=640
+  block!32=512
+ENDIF
+block!36=4
+block!40=-1
+SYS "Wimp_SendMessage",18,block,Owner%
+SaveRef%=block!8
+PROCproto("Asking owner to save")
+ENDPROC
+
+DEF PROCsave_ack_to(Path$)
+Request%=block!4
+block!12=block!8
+block!16=2 : REM Please save file to SavePath$
+$(block+44)=SavePath$+CHR$0
+block!0=(LEN(SavePath$)+48) AND &FC
+SYS "Wimp_SendMessage",17,block,Request%
+SaveRef%=block!8
+ENDPROC
+
+DEF PROCput_caret_in(Icon%)
+block!512=MainWindow%
+block!516=Icon%
+SYS "Wimp_GetIconState",,block+512
+IF block!(512+24) AND (1<<22) THEN ENDPROC
+SYS "Wimp_SetCaretPosition",MainWindow%,Icon%,&10000,0,-1,-1
+ENDPROC
+
+DEF PROCdrag_icon(Icon%)
+bk=block+512
+bk!0=MainWindow%
+bk!4=Icon%
+SYS "Wimp_GetIconState",,bk
+MinX%=bk!8
+MinY%=bk!12
+MaxX%=bk!16
+MaxY%=bk!20
+SYS "Wimp_GetWindowState",,bk
+Xoff%=bk!4
+bk!0=MinX%+Xoff%
+bk!4=MinY%+bk!16
+bk!8=MaxX%+Xoff%
+bk!12=MaxY%+bk!16
+SYS "DragASprite_Start",%11000101,1,"file_"+Type$,bk
+ENDPROC
+
+DEF PROCuser_drag_box
+SYS "DragASprite_Stop"
+SYS "Wimp_GetPointerInfo",,block
+IF block!12=MainWindow% THEN ENDPROC
+DestWin%=block!12
+DestIcon%=block!16
+Name$=FNleaf(FNread_data(3))
+block!28=block!0
+block!32=block!4
+block!0=(48+LEN(Name$)) AND &FC
+block!12=0
+block!16=1 : REM Ask dest app if it wants the file
+block!20=DestWin%
+block!24=DestIcon%
+block!36=0
+block!40=EVAL("&"+Type$)
+$(block+44)=Name$+CHR$0
+SYS "Wimp_SendMessage",18,block,DestWin%,DestIcon% TO ,,SaveDragTo%
+SaveDragRef%=block!8
+PROCproto("Offering data")
+ENDPROC
+
+DEF PROCsend_save_ack
+block!12=SaveDragRef%
+block!16=3 : REM File can now be loaded
+SYS "Wimp_SendMessage",17,block,SaveDragTo%
+SaveDragTo%=-1
+ENDPROC
+
+DEF PROCinit_menu
+$menu_block="Clipboard"+CHR$0
+menu_block!12=&070207
+menu_block!16=16*7
+menu_block!20=44
+menu_block!24=0
+
+menu_block!28=&0
+menu_block!32=InfoWindow%
+menu_block!36=&07000031
+$(menu_block+40)="Info"
+
+menu_block!52=&0
+menu_block!56=-1
+menu_block!60=&07000031
+$(menu_block+64)="Help"
+
+menu_block!76=&80
+menu_block!80=-1
+menu_block!84=&07000031
+$(menu_block+88)="Quit"
+ENDPROC
+
+DEF PROCcopy(From$, To$)
+SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
+
+IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, "Clipboard"
+ENDPROC
+
+REM Report a protocol error
+DEF PROCpe(Error$)
+scrap!0 = MainWindow%
+scrap!4 = 7
+SYS "Wimp_GetIconState", 0, scrap
+
+$(scrap!28) = Error$
+
+scrap!8 =  &0b000000
+scrap!12 = &0f000000
+SYS "Wimp_SetIconState", 0, scrap
+
+SYS "Wimp_GetWindowState", 0, scrap
+IF scrap!32 AND (1 << 16) THEN
+  REM Window is already open - bring it to the front
+  REM and enlarge it to show the error.
+  scrap!8 -= 128
+  scrap!28 = -1
+  SYS "Wimp_OpenWindow", 0, scrap
+ENDIF
+ENDPROC
+
+DEF PROCproto(Mess$)
+scrap!0 = MainWindow%
+scrap!4 = 7
+SYS "Wimp_GetIconState", 0, scrap
+
+$(scrap!28) = Mess$
+
+scrap!8 =  &07000000
+scrap!12 = &0f000000
+SYS "Wimp_SetIconState", 0, scrap
+ENDPROC
+
+REM ====================================================================================================================
+:
+:
+:
+:
+DEF PROCurl_launch(url$)
+:
+REM Launch an URL.
+:
+IF FNurl_ant_broadcast(url$) THEN PROCreport("Could not find an application to launch the given URL")
+ENDPROC
+:
+:
+:
+:
+REM --------------------------------------------------------------------------------------------------------------------
+:
+:
+:
+:
+DEF PROCurl_bounce(message%)
+:
+REM Generic handler to deal with the two Wimp Messages we care about.
+:
+LOCAL len%, result%, url$
+:
+CASE message%!16 OF
+ WHEN &4E383 : REM Message_URIReturnResult
+  IF (message%!20 AND &01)<>0 THEN
+   SYS "URI_RequestURI",0,q%,255,message%!24 TO ,,len%
+   q%?len%=13
+   :
+   IF FNurl_ant_load($q%) THEN PROCreport("Could not find an application to launch the given URL")
+  ENDIF
+ WHEN &4AF80 : REM Message_ANTOpenURL
+  SYS "XOS_GenerateError", message% + 20 TO url$
+  IF FNurl_uri_dispatch(url$) THEN
+   IF FNurl_ant_load(url$) THEN PROCreport("Could not find an application to launch the given URL")
+  ENDIF
+ENDCASE
+ENDPROC
+:
+:
+:
+:
+REM ====================================================================================================================
+:
+:
+:
+:
+DEF FNurl_ant_broadcast(url$)
+:
+REM Try the ANT Bradcast method and wait for a reply or a bounce.
+:
+LOCAL flags%
+:
+q%!0=((20+LEN(url$)+1)+3) AND (NOT 3)
+q%!12=0
+q%!16=&4AF80
+$(q%+20)=url$
+SYS "XWimp_SendMessage",18,q%,0 TO ;flags%
+:
+=(flags% AND 1)=1
+:
+:
+:
+:
+REM --------------------------------------------------------------------------------------------------------------------
+:
+:
+:
+:
+DEF FNurl_uri_dispatch(url$)
+:
+REM Try to displatch the URL through the Acorn URI system.
+:
+LOCAL flags%, task%
+:
+SYS "XOS_SWINumberFromString",,"URI_Dispatch" TO ;flags%
+IF (flags% AND 1)=0 THEN
+ SYS "Wimp_ReadSysInfo",5 TO task%
+ SYS "XURI_Dispatch",1,url$,task% TO ;flags%
+ENDIF
+:
+=(flags% AND 1)=1
+:
+:
+:
+:
+REM --------------------------------------------------------------------------------------------------------------------
+:
+:
+:
+:
+DEF FNurl_ant_load(url$)
+:
+REM Try to launch a client using the ANT protocol.
+:
+LOCAL offset%, command$, result%
+:
+offset%=INSTR(url$,":")
+:
+command$="Alias$URLOpen_"+LEFT$(url$,offset%-1)
+:
+SYS "XOS_ReadVarVal",command$,0,-1,0,0 TO ,,result%
+IF result%=0 THEN =TRUE
+:
+command$+=" "+url$
+command$=MID$(command$,LEN("Alias$")+1)
+:
+SYS "XWimp_StartTask",command$ TO ;flags%
+:
+=(flags% AND 1)=1
