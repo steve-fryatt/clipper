@@ -12,6 +12,7 @@ Clipboard - A Global Clipboard utility                           Version $$versi
 
 (c) Thomas Leonard, 1999 (32-bit by Stephen Fryatt) $$date$$
 =============================================================================
+
 </literal>
 
 
@@ -185,12 +186,13 @@ Updated by Stephen Fryatt
 </list>
 
 
-<subhead title="Test Build">
+<subhead title="Version 0.15 (03 September 2014)">
 
-Development release for testing and feedback.
+Updated by Stephen Fryatt
 
 <list>
 <li>Converted source to generic build system usning Tokenize.
+<li>Fixed broken code in URI dispatch, including adding missing error handling routines.
 </list>
 
 </chapter>
@@ -199,7 +201,6 @@ Development release for testing and feedback.
 
 
 <literal mode="Text">
-
 
 Updates and Contacting Me
 -------------------------
