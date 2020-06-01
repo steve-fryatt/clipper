@@ -2,8 +2,15 @@ REM >Prog:!Clipboard.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
+LIBRARY "BASIC:Message"
 LIBRARY "BASIC:Resources"
 LIBRARY "BASIC:Url"
+LIBRARY "BASIC:WimpError"
+
+DIM scrap 256,q% 256, a% 255
+
+PROCwimperror_initialise("Clipboard", "!clipboard")
+ON ERROR result% = FNwimperror_program : END
 
 REM These values get replaced by tokenize.
 
@@ -14,14 +21,19 @@ REM Locate the application resources.
 
 resources$ = FNresources_find_territory_folder("<Clipboard$Dir>.Resources")
 
-ON ERROR ERROR EXT ERR, REPORT$+" (error code "+STR$ ERL+")"
+REM Load the messages file.
 
-DIM scrap 256,q% 256
+PROCmessage_initialise(resources$ + "Messages")
+
+TaskName$ = FNmessage_lookup("TaskName")
+TaskSprite$ = FNmessage_lookup("TaskSpr")
+PROCwimperror_initialise(TaskName$, TaskSprite$)
+
 InternalHandle% = -&11223344
 
 DIM TASK 5,temp_name 12, menu_block 28+24*3
 $TASK="TASK"
-SYS "Wimp_Initialise",200,!TASK,"Clipboard" TO ,Handle%
+SYS "Wimp_Initialise",200,!TASK,TaskName$ TO ,Handle%
 SYS "Wimp_OpenTemplate",,resources$ + "Templates"
 DIM block 1024
 $temp_name="Info"
@@ -47,13 +59,16 @@ block!8=0
 block!12=76
 block!16=68
 block!20=%11000000011010
-$(block+24)="!Clipboard"
+$(block+24)=TaskSprite$
 SYS "Wimp_CreateIcon",,block
 SaveDragTo%=-1
 Quit%=FALSE:Owner%=-1:OurFile$="":SaveRef%=-1:SaveDragRef%=-1
 PROCinit_menu
+
+ON ERROR Quit% = FNwimperror_program
+
 PROCexamine_clipboard
-REPEAT
+WHILE NOT Quit%
   SYS "Wimp_Poll",%110001,block TO Reason%
   CASE Reason% OF
     WHEN 2     : SYS "Wimp_OpenWindow",,block
@@ -74,7 +89,7 @@ REPEAT
     WHEN 17,18 : PROCmessage(block!16)
     WHEN 19    : PROCack
   ENDCASE
-UNTIL Quit%
+ENDWHILE
 SYS "Wimp_CloseDown",Handle%,!TASK
 SYS "OS_Exit"
 END
