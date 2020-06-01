@@ -2,6 +2,7 @@ REM >Prog:!Clipboard.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
+LIBRARY "BASIC:Menu"
 LIBRARY "BASIC:Message"
 LIBRARY "BASIC:Resources"
 LIBRARY "BASIC:Url"
@@ -31,7 +32,7 @@ PROCwimperror_initialise(TaskName$, TaskSprite$)
 
 InternalHandle% = -&11223344
 
-DIM TASK 5,temp_name 12, menu_block 28+24*3
+DIM TASK 5,temp_name 12
 $TASK="TASK"
 SYS "Wimp_Initialise",200,!TASK,TaskName$ TO ,Handle%
 SYS "Wimp_OpenTemplate",,resources$ + "Templates"
@@ -63,7 +64,14 @@ $(block+24)=TaskSprite$
 SYS "Wimp_CreateIcon",,block
 SaveDragTo%=-1
 Quit%=FALSE:Owner%=-1:OurFile$="":SaveRef%=-1:SaveDragRef%=-1
-PROCinit_menu
+
+REM Initialise and load the menu templates
+
+PROCmenu_initialise
+
+block!0 = InfoWindow%
+PROCmenu_load_templates(resources$ + "Menus", block)
+IconbarMenu% = block!0
 
 ON ERROR Quit% = FNwimperror_program
 
@@ -297,7 +305,7 @@ ENDPROC
 
 DEF PROCmenu
 IF block!12=-2 THEN Height%=96+44*3 ELSE Height%=block!4+48
-SYS "Wimp_CreateMenu",,menu_block,block!0-48,Height%
+SYS "Wimp_CreateMenu",,IconbarMenu%,block!0-48,Height%
 ENDPROC
 
 DEF PROCfront(Window%)
@@ -447,29 +455,6 @@ block!12=SaveDragRef%
 block!16=3 : REM File can now be loaded
 SYS "Wimp_SendMessage",17,block,SaveDragTo%
 SaveDragTo%=-1
-ENDPROC
-
-DEF PROCinit_menu
-$menu_block="Clipboard"+CHR$0
-menu_block!12=&070207
-menu_block!16=16*7
-menu_block!20=44
-menu_block!24=0
-
-menu_block!28=&0
-menu_block!32=InfoWindow%
-menu_block!36=&07000031
-$(menu_block+40)="Info"
-
-menu_block!52=&0
-menu_block!56=-1
-menu_block!60=&07000031
-$(menu_block+64)="Help"
-
-menu_block!76=&80
-menu_block!80=-1
-menu_block!84=&07000031
-$(menu_block+88)="Quit"
 ENDPROC
 
 DEF PROCcopy(From$, To$)
