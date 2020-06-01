@@ -2,10 +2,17 @@ REM >Prog:!Clipboard.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
+LIBRARY "BASIC:Resources"
+LIBRARY "BASIC:Url"
+
 REM These values get replaced by tokenize.
 
 build_version$ = "1.10"
 build_date$ = "01 Jul 2009"
+
+REM Locate the application resources.
+
+resources$ = FNresources_find_territory_folder("<Clipboard$Dir>.Resources")
 
 ON ERROR ERROR EXT ERR, REPORT$+" (error code "+STR$ ERL+")"
 
@@ -15,7 +22,7 @@ InternalHandle% = -&11223344
 DIM TASK 5,temp_name 12, menu_block 28+24*3
 $TASK="TASK"
 SYS "Wimp_Initialise",200,!TASK,"Clipboard" TO ,Handle%
-SYS "Wimp_OpenTemplate",,"<Obey$Dir>.Templates"
+SYS "Wimp_OpenTemplate",,resources$ + "Templates"
 DIM block 1024
 $temp_name="Info"
 SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
@@ -489,117 +496,3 @@ scrap!8 =  &07000000
 scrap!12 = &0f000000
 SYS "Wimp_SetIconState", 0, scrap
 ENDPROC
-
-REM ====================================================================================================================
-:
-:
-:
-:
-DEF PROCurl_launch(url$)
-:
-REM Launch an URL.
-:
-IF FNurl_ant_broadcast(url$) THEN PROCreport("Could not find an application to launch the given URL")
-ENDPROC
-:
-:
-:
-:
-REM --------------------------------------------------------------------------------------------------------------------
-:
-:
-:
-:
-DEF PROCurl_bounce(message%)
-:
-REM Generic handler to deal with the two Wimp Messages we care about.
-:
-LOCAL len%, result%, url$
-:
-CASE message%!16 OF
- WHEN &4E383 : REM Message_URIReturnResult
-  IF (message%!20 AND &01)<>0 THEN
-   SYS "URI_RequestURI",0,q%,255,message%!24 TO ,,len%
-   q%?len%=13
-   :
-   IF FNurl_ant_load($q%) THEN PROCreport("Could not find an application to launch the given URL")
-  ENDIF
- WHEN &4AF80 : REM Message_ANTOpenURL
-  SYS "XOS_GenerateError", message% + 20 TO url$
-  IF FNurl_uri_dispatch(url$) THEN
-   IF FNurl_ant_load(url$) THEN PROCreport("Could not find an application to launch the given URL")
-  ENDIF
-ENDCASE
-ENDPROC
-:
-:
-:
-:
-REM ====================================================================================================================
-:
-:
-:
-:
-DEF FNurl_ant_broadcast(url$)
-:
-REM Try the ANT Bradcast method and wait for a reply or a bounce.
-:
-LOCAL flags%
-:
-q%!0=((20+LEN(url$)+1)+3) AND (NOT 3)
-q%!12=0
-q%!16=&4AF80
-$(q%+20)=url$
-SYS "XWimp_SendMessage",18,q%,0 TO ;flags%
-:
-=(flags% AND 1)=1
-:
-:
-:
-:
-REM --------------------------------------------------------------------------------------------------------------------
-:
-:
-:
-:
-DEF FNurl_uri_dispatch(url$)
-:
-REM Try to displatch the URL through the Acorn URI system.
-:
-LOCAL flags%, task%
-:
-SYS "XOS_SWINumberFromString",,"URI_Dispatch" TO ;flags%
-IF (flags% AND 1)=0 THEN
- SYS "Wimp_ReadSysInfo",5 TO task%
- SYS "XURI_Dispatch",1,url$,task% TO ;flags%
-ENDIF
-:
-=(flags% AND 1)=1
-:
-:
-:
-:
-REM --------------------------------------------------------------------------------------------------------------------
-:
-:
-:
-:
-DEF FNurl_ant_load(url$)
-:
-REM Try to launch a client using the ANT protocol.
-:
-LOCAL offset%, command$, result%
-:
-offset%=INSTR(url$,":")
-:
-command$="Alias$URLOpen_"+LEFT$(url$,offset%-1)
-:
-SYS "XOS_ReadVarVal",command$,0,-1,0,0 TO ,,result%
-IF result%=0 THEN =TRUE
-:
-command$+=" "+url$
-command$=MID$(command$,LEN("Alias$")+1)
-:
-SYS "XWimp_StartTask",command$ TO ;flags%
-:
-=(flags% AND 1)=1
