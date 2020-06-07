@@ -2,13 +2,25 @@ REM >Prog:!Clipboard.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
+LIBRARY "BASIC:Icon"
 LIBRARY "BASIC:Menu"
 LIBRARY "BASIC:Message"
 LIBRARY "BASIC:Resources"
 LIBRARY "BASIC:Url"
 LIBRARY "BASIC:WimpError"
+LIBRARY "BASIC:Window"
 
-DIM scrap 256,q% 256, a% 255
+REM The Window Icon Handles
+
+InfoDateIcon% = 4
+
+FileSprIcon% = 0
+FileTypeIcon% = 2
+FileNameIcon% = 3
+OKIcon% = 4
+OwnerIcon% = 6
+
+DIM scrap 256, q% 256, a% 255
 
 PROCwimperror_initialise("Clipboard", "!clipboard")
 ON ERROR result% = FNwimperror_program : END
@@ -48,12 +60,13 @@ DIM indbuf IndSize%
 SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
 SYS "Wimp_CreateWindow",,block TO MainWindow%
 SYS "Wimp_CloseTemplate"
-block!0=InfoWindow%
-block!4=4
-SYS "Wimp_GetIconState",,block
-Addr%=block!28
-Size%=block!36
-$Addr%=LEFT$(build_version$+" ("+build_date$+")",Size%-1)
+
+REM Set the Information Window date and version.
+
+PROCicon_set_indirected_text(InfoWindow%, InfoDateIcon%, build_version$+" ("+build_date$+")")
+
+REM Create the iconbar icon
+
 block!0=-1
 block!4=0
 block!8=0
@@ -77,26 +90,26 @@ ON ERROR Quit% = FNwimperror_program
 
 PROCexamine_clipboard
 WHILE NOT Quit%
-  SYS "Wimp_Poll",%110001,block TO Reason%
-  CASE Reason% OF
-    WHEN 2     : SYS "Wimp_OpenWindow",,block
-    WHEN 3     : SYS "Wimp_CloseWindow",,block
-    WHEN 6     : IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
-    WHEN 7     : PROCuser_drag_box
-    WHEN 8     : IF block!24=13 THEN
-                   PROCsave_clipboard(FNread_data(3),TRUE,FALSE)
-                 ELSE
-                   IF block!24=&1B THEN
-                     PROCclose(MainWindow%)
-                   ELSE
-                     SYS "Wimp_ProcessKey", block!24
-                   ENDIF
-                 ENDIF
-    WHEN 9     : IF block!0=1 THEN OSCLI("Filer_Run <Clipboard$Dir>.!Help")
-                 IF block!0=2 THEN Quit%=TRUE
-    WHEN 17,18 : PROCmessage(block!16)
-    WHEN 19    : PROCack
-  ENDCASE
+	SYS "Wimp_Poll",%110001,block TO Reason%
+	CASE Reason% OF
+	WHEN 2:		SYS "Wimp_OpenWindow",,block
+	WHEN 3:		SYS "Wimp_CloseWindow",,block
+	WHEN 6:		IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
+	WHEN 7:		PROCuser_drag_box
+	WHEN 8:		IF block!24=13 THEN
+				PROCsave_clipboard(FNread_data(3),TRUE,FALSE)
+			ELSE
+				IF block!24=&1B THEN
+					PROCwindow_close(MainWindow%)
+				ELSE
+					SYS "Wimp_ProcessKey", block!24
+				ENDIF
+			ENDIF
+	WHEN 9 :	IF block!0=1 THEN OSCLI("Filer_Run <Clipboard$Dir>.!Help")
+			IF block!0=2 THEN Quit%=TRUE
+	WHEN 17,18 :	PROCmessage(block!16)
+	WHEN 19 :	PROCack
+	ENDCASE
 ENDWHILE
 SYS "Wimp_CloseDown",Handle%,!TASK
 SYS "OS_Exit"
@@ -117,15 +130,18 @@ CASE Code% OF
                  ENDIF
                ENDIF
 
-               PROCset_text(3,FNstrip(block+44))
-               PROCset_text(6,FNname(block!4)):Owner%=block!4
+               PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,FNstrip(block+44))
+               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,FNname(block!4)):Owner%=block!4
                Type$=STR$~block!40
-               PROCset_text(2,FNtype(Type$))
+               PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
                PROCset_ind(0,"sfile_"+Type$+";r2")
                SYS "Wimp_GetCaretPosition",,block
                IF block!0=MainWindow% THEN PROCput_caret(block)
-               PROCunshade(3):PROCunshade(0):PROCunshade(4)
-               PROCunshade(6):PROCunshade(2)
+               PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
              ENDIF
   WHEN 2   : IF block!12=SaveDragRef% THEN
                REM Dragged-to app wants the file - grab it from clip owner
@@ -171,16 +187,20 @@ CASE Code% OF
              ELSE
                PROCclaim_clipboard
                OurFile$=FNstrip(block+44)
-               PROCset_text(3,OurFile$)
-               PROCset_text(6,"Clipboard"):Owner%=Handle%
+               PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,OurFile$)
+               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"Clipboard"):Owner%=Handle%
                PROCproto("I own it")
                Type$=STR$~block!40
-               PROCset_text(2,FNtype(Type$))
+               PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
                PROCset_ind(0,"sfile_"+Type$+";r2")
                SYS "Wimp_GetCaretPosition",,block
                IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
-               PROCunshade(3):PROCunshade(0):PROCunshade(4)
-               PROCunshade(6):PROCunshade(2):PROCfront(MainWindow%)
+               PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
+               PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
+               PROCfront(MainWindow%)
              ENDIF
   WHEN 4   : IF SaveDragTo%<>-1 THEN
                block!12=SaveFromRef%
@@ -219,15 +239,18 @@ IF block!16=4 THEN PROCpe("Receiver died!"):SaveDragTo%=-1:ENDPROC
 IF block!8=SaveDragRef% THEN PROCproto("App not interested"):ENDPROC
 IF block!8<>MyRef% THEN ENDPROC
 IF block!16<>&10 THEN ENDPROC
-PROCset_text(3,"None")
-PROCset_text(6,"-"):Owner%=-1:PROCproto("No clipboard")
-PROCset_text(2,"-")
+PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,"None")
+PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"-"):Owner%=-1:PROCproto("No clipboard")
+PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,"-")
 Type$="xxx"
 PROCset_ind(0,"sfile_xxx;r2")
 SYS "Wimp_GetCaretPosition",,block
 IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
-PROCshade(3):PROCshade(0):PROCshade(4)
-PROCunshade(6):PROCunshade(2)
+PROCicon_set_shaded(MainWindow%, FileNameIcon%, TRUE)
+PROCicon_set_shaded(MainWindow%, FileSprIcon%, TRUE)
+PROCicon_set_shaded(MainWindow%, OKIcon%, TRUE)
+PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
 ENDPROC
 
 DEF PROCexamine_clipboard
@@ -262,15 +285,6 @@ WHILE ?Addr%>31
 ENDWHILE
 =A$
 
-DEF PROCset_text(Icon%,Text$)
-block!512=MainWindow%
-block!516=Icon%
-SYS "Wimp_GetIconState",,block+512
-Addr%=block!(28+512)
-Size%=block!(36+512)
-$Addr%=LEFT$(Text$,Size%-1)
-ENDPROC
-
 DEF FNread_data(Icon%)
 block!512=MainWindow%
 block!516=Icon%
@@ -304,8 +318,11 @@ ENDCASE
 ENDPROC
 
 DEF PROCmenu
-IF block!12=-2 THEN Height%=96+44*3 ELSE Height%=block!4+48
-SYS "Wimp_CreateMenu",,IconbarMenu%,block!0-48,Height%
+IF block!12=-2 THEN
+	PROCmenu_create_iconbar(IconbarMenu%, block!0)
+ELSE
+	PROCmenu_create(IconbarMenu%, block!0, block!4)
+ENDIF
 ENDPROC
 
 DEF PROCfront(Window%)
@@ -314,11 +331,6 @@ SYS "Wimp_GetWindowState",,block+512
 block!(512+28)=-1
 SYS "Wimp_OpenWindow",,block+512
 PROCput_caret_in(3)
-ENDPROC
-
-DEF PROCclose(Window%)
-block!512=Window%
-SYS "Wimp_CloseWindow",,block+512
 ENDPROC
 
 DEF PROCtoggle(Window%)
@@ -332,22 +344,6 @@ ELSE
   PROCput_caret_in(3)
   PROCexamine_clipboard
 ENDIF
-ENDPROC
-
-DEF PROCshade(Icon%)
-block!512=MainWindow%
-block!516=Icon%
-block!520=1<<22
-block!524=1<<22
-SYS "Wimp_SetIconState",,block+512
-ENDPROC
-
-DEF PROCunshade(Icon%)
-block!512=MainWindow%
-block!516=Icon%
-block!520=0
-block!524=1<<22
-SYS "Wimp_SetIconState",,block+512
 ENDPROC
 
 DEF PROCclaim_clipboard
