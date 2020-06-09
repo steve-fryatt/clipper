@@ -196,8 +196,6 @@ WHEN 3 : REM Message_DataLoad
 		ClipboardCurrentType% = b%!40
 		PROCmain_wind_set_content(OurFile$, TaskName$, ClipboardCurrentType%)
 		PROCmain_wind_set_proto_message("ItsOurs")
-
-		PROCfront(MainWindow%)
 	ENDIF
 
 WHEN 4 : REM Message_DataLoadAck
@@ -316,14 +314,6 @@ IF block!12=-2 THEN
 ELSE
 	PROCmenu_create(IconbarMenu%, block!0, block!4)
 ENDIF
-ENDPROC
-
-DEF PROCfront(Window%)
-block!512=Window%
-SYS "Wimp_GetWindowState",,block+512
-block!(512+28)=-1
-SYS "Wimp_OpenWindow",,block+512
-PROCput_caret_in(3)
 ENDPROC
 
 DEF PROCtoggle(Window%)
