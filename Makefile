@@ -28,6 +28,8 @@ ARCHIVE := clipboard
 
 APP := !Clipboard
 
-SRCS := Clipboard.bbt
+SRCS := Clipboard.bbt	\
+	InfoWind.bbt	\
+	MainWind.bbt
 
 include $(SFTOOLS_MAKE)/Basic

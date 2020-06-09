@@ -1,0 +1,36 @@
+
+
+
+REM Load the info window template and initialise the variables.
+:
+DEF PROCinfo_wind_initialise
+PROCtemplate_load_claim("Info", b%, 1024, -1)
+SYS "Wimp_CreateWindow",,block TO InfoWindHandle%
+
+REM The icon handles.
+
+InfoWindDateIcon% = 4
+InfoWindEmailIcon% = 5
+InfoWindUrlIcon% = 6
+
+REM Set the Information Window date and version.
+
+PROCicon_set_indirected_text(InfoWindHandle%, InfoWindDateIcon%, BuildVersion$+" ("+BuildDate$+")")
+ENDPROC
+
+
+REM Handle clicks in the Info Window.
+REM
+REM \param button%	The mouse button used for the click.
+REM \param icon%	The icon over which the click occurred.
+:
+DEF PROCinfo_wind_click(button%, icon%)
+IF button% <> 4 THEN RETURN
+
+CASE icon% OF
+WHEN InfoWindEmailIcon%
+	PROCurl_launch("mailto:steve@stevefryatt.org.uk")
+WHEN InfoWindUrlIcon%
+	PROCurl_launch("http://www.stevefryatt.org.uk/software/clipboard/")
+ENDCASE
+ENDPROC

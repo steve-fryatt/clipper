@@ -1,0 +1,20 @@
+
+
+REM Load the main window template and initialise the variables.
+:
+DEF PROCmain_wind_initialise
+PROCtemplate_load_claim("Main", b%, 1024, -1)
+SYS "Wimp_CreateWindow",,b% TO MainWindow%
+
+REM The icon handles.
+
+FileSprIcon% = 0
+FileTypeIcon% = 2
+FileNameIcon% = 3
+OKIcon% = 4
+OwnerIcon% = 6
+
+ENDPROC
+
+
+

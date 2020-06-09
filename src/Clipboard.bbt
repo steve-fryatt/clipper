@@ -6,37 +6,36 @@ LIBRARY "BASIC:Icon"
 LIBRARY "BASIC:Menu"
 LIBRARY "BASIC:Message"
 LIBRARY "BASIC:Resources"
+LIBRARY "BASIC:Template"
 LIBRARY "BASIC:Url"
 LIBRARY "BASIC:WimpError"
 LIBRARY "BASIC:Window"
 
-REM The Window Icon Handles
+LIBRARY "src/InfoWind.bbt"
+LIBRARY "src/MainWind.bbt"
 
-InfoDateIcon% = 4
+REM These values get replaced by tokenize.
 
-FileSprIcon% = 0
-FileTypeIcon% = 2
-FileNameIcon% = 3
-OKIcon% = 4
-OwnerIcon% = 6
+BuildVersion$ = "1.10"
+BuildDate$ = "01 Jul 2009"
 
-DIM scrap 256, q% 256, a% 255
+REM Allocate the Wimp memory blocks.
+
+DIM block 1024, scrap 256, a% 255
+b% = block : q% = scrap
+
+REM Configure the basic error handling for initialisation.
 
 PROCwimperror_initialise("Clipboard", "!clipboard")
 ON ERROR result% = FNwimperror_program : END
 
-REM These values get replaced by tokenize.
-
-build_version$ = "1.10"
-build_date$ = "01 Jul 2009"
-
 REM Locate the application resources.
 
-resources$ = FNresources_find_territory_folder("<Clipboard$Dir>.Resources")
+Resources$ = FNresources_find_territory_folder("<Clipboard$Dir>.Resources")
 
 REM Load the messages file.
 
-PROCmessage_initialise(resources$ + "Messages")
+PROCmessage_initialise(Resources$ + "Messages")
 
 TaskName$ = FNmessage_lookup("TaskName")
 TaskSprite$ = FNmessage_lookup("TaskSpr")
@@ -44,26 +43,14 @@ PROCwimperror_initialise(TaskName$, TaskSprite$)
 
 InternalHandle% = -&11223344
 
-DIM TASK 5,temp_name 12
+DIM TASK 5
 $TASK="TASK"
-SYS "Wimp_Initialise",200,!TASK,TaskName$ TO ,Handle%
-SYS "Wimp_OpenTemplate",,resources$ + "Templates"
-DIM block 1024
-$temp_name="Info"
-SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
-DIM indbuf IndSize%
-SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
-SYS "Wimp_CreateWindow",,block TO InfoWindow%
-$temp_name="Main"
-SYS "Wimp_LoadTemplate",,0,,,-1,temp_name,0 TO ,,IndSize%
-DIM indbuf IndSize%
-SYS "Wimp_LoadTemplate",,block,indbuf,indbuf+IndSize%+1,-1,temp_name,0
-SYS "Wimp_CreateWindow",,block TO MainWindow%
-SYS "Wimp_CloseTemplate"
+SYS "Wimp_Initialise", 200, !TASK, TaskName$ TO ,TaskHandle%
 
-REM Set the Information Window date and version.
-
-PROCicon_set_indirected_text(InfoWindow%, InfoDateIcon%, build_version$+" ("+build_date$+")")
+PROCtemplate_open(Resources$ + "Templates")
+PROCinfo_wind_initialise
+PROCmain_wind_initialise
+PROCtemplate_close
 
 REM Create the iconbar icon
 
@@ -82,8 +69,8 @@ REM Initialise and load the menu templates
 
 PROCmenu_initialise
 
-block!0 = InfoWindow%
-PROCmenu_load_templates(resources$ + "Menus", block)
+block!0 = InfoWindHandle%
+PROCmenu_load_templates(Resources$ + "Menus", block)
 IconbarMenu% = block!0
 
 ON ERROR Quit% = FNwimperror_program
@@ -111,7 +98,7 @@ WHILE NOT Quit%
 	WHEN 19 :	PROCack
 	ENDCASE
 ENDWHILE
-SYS "Wimp_CloseDown",Handle%,!TASK
+SYS "Wimp_CloseDown",TaskHandle%,!TASK
 SYS "OS_Exit"
 END
 
@@ -152,7 +139,7 @@ CASE Code% OF
                SYS "Wimp_SendMessage", 19, block, block!4
 
                PROCsave_clipboard(FNstrip(block+44),FALSE,TRUE)
-               IF Owner%=Handle% THEN
+               IF Owner%=TaskHandle% THEN
                  REM We own it - ack now.
                  PROCsend_save_ack
                ENDIF
@@ -188,7 +175,7 @@ CASE Code% OF
                PROCclaim_clipboard
                OurFile$=FNstrip(block+44)
                PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,OurFile$)
-               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"Clipboard"):Owner%=Handle%
+               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"Clipboard"):Owner%=TaskHandle%
                PROCproto("I own it")
                Type$=STR$~block!40
                PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
@@ -208,10 +195,10 @@ CASE Code% OF
                SaveDragTo%=-1
              ENDIF
   WHEN &F  : IF ((block!20) AND 4) THEN
-               IF block!4<>Handle% THEN Owner%=-1:PROCexamine_clipboard
+               IF block!4<>TaskHandle% THEN Owner%=-1:PROCexamine_clipboard
              ENDIF
   WHEN &10 : IF MyRef%<>block!8 THEN
-               IF Owner%=Handle% THEN
+               IF Owner%=TaskHandle% THEN
                  PROCproto("Sending data myself")
                  Request%=block!4
                  block!12=block!8
@@ -254,7 +241,7 @@ PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
 ENDPROC
 
 DEF PROCexamine_clipboard
-IF Owner%=Handle% THEN ENDPROC
+IF Owner%=TaskHandle% THEN ENDPROC
 block!0=44
 block!12=0
 block!16=&10
@@ -271,8 +258,8 @@ DEF PROCput_caret(b)
 SYS "Wimp_SetCaretPosition",b!0,b!4,b!8,b!12,b!16,b!20
 ENDPROC
 
-DEF FNname(Handle%)
-SYS "XTaskManager_TaskNameFromHandle",Handle% TO NamePtr% ;Flags%
+DEF FNname(handle%)
+SYS "XTaskManager_TaskNameFromHandle",handle% TO NamePtr% ;Flags%
 IF Flags% AND 1 THEN ="???"
 =FNstrip(NamePtr%)
 
@@ -307,13 +294,12 @@ block?(Len%+512)=0
 =FNstrip(block+512)
 
 DEF PROCmouse_click
-Window%=block!12
-CASE Window% OF
+CASE b%!12 OF
   WHEN -2         : PROCtoggle(MainWindow%)
   WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNread_data(3),-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
-  WHEN InfoWindow%: IF block!16=5 THEN PROCurl_launch("mailto:steve@stevefryatt.org.uk")
-                    IF block!16=6 THEN PROCurl_launch("http://www.stevefryatt.org.uk/software/clipboard/")
+WHEN InfoWindHandle%
+	PROCinfo_wind_click(b%!8, b%!16)
 ENDCASE
 ENDPROC
 
@@ -371,7 +357,7 @@ NEXT A%
 DEF PROCsave_clipboard(S$,Check%,UseWindow%)
 SavePath$=S$
 IF Check% AND INSTR(SavePath$,".")=0 THEN PROCreport("To save, drag icon to a directory viewer"):ENDPROC
-IF Owner%=Handle% THEN PROCcopy(OurFile$, SavePath$):ENDPROC
+IF Owner%=TaskHandle% THEN PROCcopy(OurFile$, SavePath$):ENDPROC
 block!0=44
 block!12=0
 block!16=&10 : REM Request clipboard data
@@ -388,12 +374,12 @@ SaveRef%=block!8
 PROCproto("Asking owner to save")
 ENDPROC
 
-DEF PROCsave_ack_to(Path$)
+DEF PROCsave_ack_to(path$)
 Request%=block!4
 block!12=block!8
 block!16=2 : REM Please save file to SavePath$
-$(block+44)=SavePath$+CHR$0
-block!0=(LEN(SavePath$)+48) AND &FC
+$(block+44)=path$+CHR$0
+block!0=(LEN(path$)+48) AND &FC
 SYS "Wimp_SendMessage",17,block,Request%
 SaveRef%=block!8
 ENDPROC
