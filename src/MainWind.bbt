@@ -19,9 +19,35 @@ ENDPROC
 
 
 
+REM Close the main window.
+:
+DEF PROCmain_wind_close
+PROCwindow_close(MainWindow%)
+ENDPROC
 
 
 
+
+DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
+LOCAL sprite$
+
+sprite$ = FNclipboard_sprite_from_type(filetype%)
+
+PROCicon_set_indirected_text(MainWindow%, FileNameIcon%, filename$)
+PROCicon_set_indirected_text(MainWindow%, OwnerIcon%, taskname$)
+PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%, FNclipboard_name_from_type(filetype%))
+
+PROCset_ind(FileSprIcon%, "S" + sprite$ + ";R2")
+
+SYS "Wimp_GetCaretPosition",,q%
+IF q%!0 = MainWindow% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
+
+PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
+ENDPROC
 
 
 REM Set the protocol message field to an error message, and enlarge the

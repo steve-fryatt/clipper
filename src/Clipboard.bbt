@@ -6,6 +6,7 @@ LIBRARY "BASIC:Icon"
 LIBRARY "BASIC:Menu"
 LIBRARY "BASIC:Message"
 LIBRARY "BASIC:Resources"
+LIBRARY "BASIC:String"
 LIBRARY "BASIC:Template"
 LIBRARY "BASIC:Url"
 LIBRARY "BASIC:WimpError"
@@ -73,172 +74,202 @@ block!0 = InfoWindHandle%
 PROCmenu_load_templates(Resources$ + "Menus", block)
 IconbarMenu% = block!0
 
-ON ERROR Quit% = FNwimperror_program
+REM Clipboard state data.
+
+ClipboardCurrentType% = -1
+
+REM Check the clipboard contents.
 
 PROCexamine_clipboard
+
+REM Poll the Wimp until exit.
+
+ON ERROR Quit% = FNwimperror_program
+
 WHILE NOT Quit%
-	SYS "Wimp_Poll",%110001,block TO Reason%
+	SYS "Wimp_Poll", %110001, b% TO Reason%
 	CASE Reason% OF
 	WHEN 2:		SYS "Wimp_OpenWindow",,block
 	WHEN 3:		SYS "Wimp_CloseWindow",,block
 	WHEN 6:		IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
 	WHEN 7:		PROCuser_drag_box
 	WHEN 8:		IF block!24=13 THEN
-				PROCsave_clipboard(FNread_data(3),TRUE,FALSE)
+				PROCsave_clipboard(FNicon_get_text(3),TRUE,FALSE)
 			ELSE
 				IF block!24=&1B THEN
-					PROCwindow_close(MainWindow%)
+					PROCmain_wind_close
 				ELSE
 					SYS "Wimp_ProcessKey", block!24
 				ENDIF
 			ENDIF
 	WHEN 9 :	IF block!0=1 THEN OSCLI("Filer_Run <Clipboard$Dir>.!Help")
 			IF block!0=2 THEN Quit%=TRUE
-	WHEN 17,18 :	PROCmessage(block!16)
-	WHEN 19 :	PROCack
+	WHEN 17,18 :	PROCclipper_process_message
+	WHEN 19 :	PROCclipper_process_bounce
 	ENDCASE
 ENDWHILE
-SYS "Wimp_CloseDown",TaskHandle%,!TASK
+
+SYS "Wimp_CloseDown", TaskHandle%, !TASK
 SYS "OS_Exit"
 END
 
-DEF PROCmessage(Code%)
-CASE Code% OF
-  WHEN 0   : Quit%=TRUE
-  WHEN 1   : IF block!12=SaveRef% THEN PROCsave_ack_to(SavePath$):ENDPROC
-             IF block!12=MyRef% OR block!24=InternalHandle% THEN
-               IF block!12<>MyRef% THEN
-                 PROCmain_wind_set_proto_error("BadYourRef")
-               ELSE
-                 IF block!24<>InternalHandle% THEN
-                   PROCmain_wind_set_proto_error("BadHandle")
-                 ELSE
-                   PROCmain_wind_set_proto_message("FoundOwner")
-                 ENDIF
-               ENDIF
+REM Handle incoming Wimp messages.
+REM On entry, b% is assumed to point to the Wimp_Poll block.
+:
+DEF PROCclipper_process_message
+LOCAL flags%
 
-               PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,FNstrip(block+44))
-               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,FNname(block!4)):Owner%=block!4
-               Type$=STR$~block!40
-               PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
-               PROCset_ind(0,"sfile_"+Type$+";r2")
-               SYS "Wimp_GetCaretPosition",,block
-               IF block!0=MainWindow% THEN PROCput_caret(block)
-               PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
-             ENDIF
-  WHEN 2   : IF block!12=SaveDragRef% THEN
-               REM Dragged-to app wants the file - grab it from clip owner
-               SaveDragRef%=block!8
+CASE b%!16 OF
+WHEN 0 : REM Message_Quit
+	Quit%=TRUE
 
-               REM Ack the message whatever happens
-               block!12 = SaveDragRef%
-               SYS "Wimp_SendMessage", 19, block, block!4
+WHEN 1 : REM Message_DataSave
+	IF b%!12 = SaveRef% THEN PROCsave_ack_to(SavePath$) : ENDPROC
 
-               PROCsave_clipboard(FNstrip(block+44),FALSE,TRUE)
-               IF Owner%=TaskHandle% THEN
-                 REM We own it - ack now.
-                 PROCsend_save_ack
-               ENDIF
-             ELSE
-               PROCcopy(OurFile$, FNstrip(block + 44))
-               Request%=block!4
-               block!12=block!8
-               block!16=3
-               SYS "XOS_File",23,OurFile$ TO Ob%,,,,Size%,,Type% ;Flags%
-               IF (Flags% AND %1) OR Ob%<>1 THEN
-                 PROCmain_wind_set_proto_error("BadClipFile")
-               ELSE
-                 block!36=Size%
-                 block!40=Type%
-                 SYS "Wimp_SendMessage",17,block,Request%
-               ENDIF
-             ENDIF
-  WHEN 3   : IF (block!12)=SaveRef% THEN
-               IF SaveDragTo%<>-1 THEN
-                 SaveDragFrom%=block!4
-                 SaveFromRef%=block!8
+	IF b%!12 = MyRef% OR b%!24 = InternalHandle% THEN
+		IF b%!12 <> MyRef% THEN
+			PROCmain_wind_set_proto_error("BadYourRef")
+		ELSE
+			IF b%!24 <> InternalHandle% THEN
+				PROCmain_wind_set_proto_error("BadHandle")
+			ELSE
+				PROCmain_wind_set_proto_message("FoundOwner")
+			ENDIF
+		ENDIF
 
-                 REM Ack the message
-                 block!12 = block!8
-                 SYS "Wimp_SendMessage", 19, block, SaveDragFrom%
+		Owner% = b%!4
+		ClipboardCurrentType% = b%!40
+		PROCmain_wind_set_content(FNstring_read(b%+44), FNname(b%!4), ClipboardCurrentType%)
+	ENDIF
 
-                 block!12=SaveDragRef% : REM Pass message on to dest app
-                 SYS "Wimp_SendMessage",18,block,SaveDragTo%
-                 SaveDragRef%=block!8
-                 PROCmain_wind_set_proto_message("AskToLoad")
-               ENDIF
-             ELSE
-               PROCclaim_clipboard
-               OurFile$=FNstrip(block+44)
-               PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,OurFile$)
-               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%, TaskName$):Owner%=TaskHandle%
-               PROCmain_wind_set_proto_message("ItsOurs")
-               Type$=STR$~block!40
-               PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
-               PROCset_ind(0,"sfile_"+Type$+";r2")
-               SYS "Wimp_GetCaretPosition",,block
-               IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
-               PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
-               PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
-               PROCfront(MainWindow%)
-             ENDIF
-  WHEN 4   : IF SaveDragTo%<>-1 THEN
-               block!12=SaveFromRef%
-               SYS "Wimp_SendMessage",17,block,SaveDragFrom%
-               SaveDragTo%=-1
-             ENDIF
-  WHEN &F  : IF ((block!20) AND 4) THEN
-               IF block!4<>TaskHandle% THEN Owner%=-1:PROCexamine_clipboard
-             ENDIF
-  WHEN &10 : IF MyRef%<>block!8 THEN
-               IF Owner%=TaskHandle% THEN
-                 PROCmain_wind_set_proto_message("SendingData")
-                 Request%=block!4
-                 block!12=block!8
-                 SYS "Wimp_SendMessage",19,block
-                 SYS "XOS_File",23,OurFile$ TO Ob%,,,,Size%,,Type% ;Flags%
-                 IF (Flags% AND %1) OR Ob%<>1 THEN
-                   PROCreport("Bad clipboard file")
-                 ELSE
-                   block!36=Size%
-                   block!16=1
-                   block!40=Type%
-                   Leaf$=FNleaf(OurFile$)
-                   $(block+44)=Leaf$+CHR$0
-                   block!0=44+(LEN(Leaf$)+4)AND&FC
-                   SYS "Wimp_SendMessage",17,block,Request%
-                 ENDIF
-               ENDIF
-             ENDIF
+WHEN 2 : REM Message_DataSaveAck
+	IF block!12=SaveDragRef% THEN
+		REM Dragged-to app wants the file - grab it from clip owner
+		SaveDragRef% = b%!8
+
+		REM Ack the message whatever happens
+		b%!12 = SaveDragRef%
+		SYS "Wimp_SendMessage", 19, b%, b%!4
+
+		PROCsave_clipboard(FNstring_read(b%+44), FALSE, TRUE)
+
+		REM If we own the clipboard, send the ack now.
+
+		IF Owner% = TaskHandle% THEN PROCsend_save_ack
+	ELSE
+		PROCcopy(OurFile$, FNstring_read(b%+44))
+		Request% = b%!4
+		b%!12 = b%!8
+		b%!16 = 3
+		SYS "XOS_File", 23, OurFile$ TO Ob%,,,,Size%,,Type% ;flags%
+		IF (flags% AND %1) OR (Ob% <> 1) THEN
+			PROCmain_wind_set_proto_error("BadClipFile")
+		ELSE
+			b%!36 = Size%
+			b%!40 = Type%
+			SYS "Wimp_SendMessage", 17, b%, Request%
+		ENDIF
+	ENDIF
+
+WHEN 3 : REM Message_DataLoad
+	IF b%!12 = SaveRef% THEN
+		IF SaveDragTo% <> -1 THEN
+			SaveDragFrom% = b%!4
+			SaveFromRef% = b%!8
+
+			REM Ack the message
+
+			b%!12 = b%!8
+			SYS "Wimp_SendMessage", 19, b%, SaveDragFrom%
+
+			REM Pass message on to dest app
+
+			b%!12 = SaveDragRef%
+			SYS "Wimp_SendMessage", 18, b%, SaveDragTo%
+			SaveDragRef% = b%!8
+			PROCmain_wind_set_proto_message("AskToLoad")
+		ENDIF
+	ELSE
+		PROCclaim_clipboard
+		OurFile$ = FNstring_read(b%+44)
+		Owner% = TaskHandle%
+		ClipboardCurrentType% = b%!40
+		PROCmain_wind_set_content(OurFile$, TaskName$, ClipboardCurrentType%)
+		PROCmain_wind_set_proto_message("ItsOurs")
+
+		PROCfront(MainWindow%)
+	ENDIF
+
+WHEN 4 : REM Message_DataLoadAck
+	IF SaveDragTo% <> -1 THEN
+		b%!12 = SaveFromRef%
+		SYS "Wimp_SendMessage", 17, b%, SaveDragFrom%
+		SaveDragTo% = -1
+	ENDIF
+
+WHEN &F : REM Message_ClaimEntity
+	IF (b%!20 AND 4) THEN
+		IF b%!4 <> TaskHandle% THEN
+			Owner% = -1
+			PROCexamine_clipboard
+		ENDIF
+	ENDIF
+
+WHEN &10 : REM Message_DataRequest
+	IF MyRef% <> b%!8 THEN
+		IF Owner% = TaskHandle% THEN
+			PROCmain_wind_set_proto_message("SendingData")
+			Request% = b%!4
+			b%!12 = b%!8
+			SYS "Wimp_SendMessage", 19, b%
+
+			SYS "XOS_File", 23, OurFile$ TO Ob%,,,,Size%,,Type% ;flags%
+			IF (flags% AND %1) OR (Ob% <> 1) THEN
+				PROCreport("Bad clipboard file")
+			ELSE
+				b%!36 = Size%
+				b%!16 = 1
+				b%!40 = Type%
+				Leaf$ = FNleaf(OurFile$)
+				$(b%+44) = Leaf$ + CHR$(0)
+				b%!0 = 44 + (LEN(Leaf$) + 4) AND &FC
+				SYS "Wimp_SendMessage", 17, b%, Request%
+			ENDIF
+		ENDIF
+	ENDIF
 ENDCASE
 ENDPROC
 
-DEF PROCack
-IF block!16=&4E383 OR block!16=&4AF80 THEN PROCurl_bounce(block):ENDPROC
-IF block!16=4 THEN PROCmain_wind_set_proto_error("RecDied"):SaveDragTo%=-1:ENDPROC
-IF block!8=SaveDragRef% THEN PROCmain_wind_set_proto_message("NoInterest"):ENDPROC
-IF block!8<>MyRef% THEN ENDPROC
-IF block!16<>&10 THEN ENDPROC
-PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,"None")
-PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"-"):Owner%=-1:PROCmain_wind_set_proto_message("NoClipboard")
-PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,"-")
-Type$="xxx"
-PROCset_ind(0,"sfile_xxx;r2")
-SYS "Wimp_GetCaretPosition",,block
-IF block!0=MainWindow% THEN block!0=-1:PROCput_caret(block)
-PROCicon_set_shaded(MainWindow%, FileNameIcon%, TRUE)
-PROCicon_set_shaded(MainWindow%, FileSprIcon%, TRUE)
-PROCicon_set_shaded(MainWindow%, OKIcon%, TRUE)
-PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
+
+REM Handle boinced Wimp messages.
+REM On entry, b% is assumed to point to the Wimp_Poll block.
+:
+DEF PROCclipper_process_bounce
+CASE b%!16 OF
+WHEN &4E383, &4AF80 : REM Message_URIReturnResult, Message_InetSuiteOpenURL
+	PROCurl_bounce(block)
+	ENDPROC
+
+WHEN 4 : REM Message_DataLoadAck
+	PROCmain_wind_set_proto_error("RecDied")
+	SaveDragTo% = -1
+	ENDPROC
+
+OTHERWISE
+	IF b%!8 = SaveDragRef% THEN
+		PROCmain_wind_set_proto_message("NoInterest")
+		ENDPROC
+	ENDIF
+	IF b%!8 <> MyRef% THEN ENDPROC
+	IF b%!16 <> &10 THEN ENDPROC
+
+	Owner% = -1
+	ClipboardCurrentType% = -1
+
+	PROCmain_wind_set_content("None", "-", ClipboardCurrentType%)
+	PROCmain_wind_set_proto_message("NoClipboard")
 ENDPROC
+
 
 DEF PROCexamine_clipboard
 IF Owner%=TaskHandle% THEN ENDPROC
@@ -254,29 +285,10 @@ MyRef%=block!8
 PROCmain_wind_set_proto_message("SearchOwner")
 ENDPROC
 
-DEF PROCput_caret(b)
-SYS "Wimp_SetCaretPosition",b!0,b!4,b!8,b!12,b!16,b!20
-ENDPROC
-
 DEF FNname(handle%)
 SYS "XTaskManager_TaskNameFromHandle",handle% TO NamePtr% ;Flags%
 IF Flags% AND 1 THEN ="???"
-=FNstrip(NamePtr%)
-
-DEF FNstrip(Addr%)
-LOCAL A$
-A$=""
-WHILE ?Addr%>31
-  A$+=CHR$(?Addr%)
-  Addr%+=1
-ENDWHILE
-=A$
-
-DEF FNread_data(Icon%)
-block!512=MainWindow%
-block!516=Icon%
-SYS "Wimp_GetIconState",,block+512
-=FNstrip(block!(28+512))
+=FNstring_read(NamePtr%)
 
 DEF PROCset_ind(Icon%,Text$)
 IF LEN(Text$)<>12 THEN Text$="sfile_xxx;r2"
@@ -287,16 +299,10 @@ Addr%=block!(32+512)
 $Addr%=Text$
 ENDPROC
 
-DEF FNtype(Hex$)
-SYS "XOS_ReadVarVal","File$Type_"+Hex$,block+512,512,0,3 TO ,,Len%;Flags%
-IF Flags% AND 1 THEN =Hex$
-block?(Len%+512)=0
-=FNstrip(block+512)
-
 DEF PROCmouse_click
 CASE b%!12 OF
   WHEN -2         : PROCtoggle(MainWindow%)
-  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNread_data(3),-1,0)
+  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNicon_get_text(3),-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(b%!8, b%!16)
@@ -407,7 +413,7 @@ bk!0=MinX%+Xoff%
 bk!4=MinY%+bk!16
 bk!8=MaxX%+Xoff%
 bk!12=MaxY%+bk!16
-SYS "DragASprite_Start",%11000101,1,"file_"+Type$,bk
+SYS "DragASprite_Start",%11000101,1,FNclipboard_sprite_from_type(ClipboardCurrentType%),bk
 ENDPROC
 
 DEF PROCuser_drag_box
@@ -416,7 +422,7 @@ SYS "Wimp_GetPointerInfo",,block
 IF block!12=MainWindow% THEN ENDPROC
 DestWin%=block!12
 DestIcon%=block!16
-Name$=FNleaf(FNread_data(3))
+Name$=FNleaf(FNicon_get_text(3))
 block!28=block!0
 block!32=block!4
 block!0=(48+LEN(Name$)) AND &FC
@@ -425,7 +431,7 @@ block!16=1 : REM Ask dest app if it wants the file
 block!20=DestWin%
 block!24=DestIcon%
 block!36=0
-block!40=EVAL("&"+Type$)
+block!40=ClipboardCurrentType%
 $(block+44)=Name$+CHR$0
 SYS "Wimp_SendMessage",18,block,DestWin%,DestIcon% TO ,,SaveDragTo%
 SaveDragRef%=block!8
@@ -444,3 +450,18 @@ SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
 
 IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, TaskName$
 ENDPROC
+
+DEF FNclipboard_sprite_from_type(filetype%)
+IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
+="file_" + RIGHT$("000" + STR$~(filetype%), 3)
+
+DEF FNclipboard_name_from_type(filetype%)
+LOCAL hex$, len%, flags%
+
+hex$ = STR$~(filetype%)
+
+SYS "XOS_ReadVarVal", "File$Type_"+hex$, q%, 256, 0, 3 TO ,,len%; flags%
+IF flags% AND 1 THEN =hex$
+
+q%?len% = 0
+=FNstring_read(q%)
