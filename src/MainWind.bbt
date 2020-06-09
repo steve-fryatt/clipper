@@ -17,6 +17,24 @@ MainWindProtoIcon% = 7
 ENDPROC
 
 
+REM Toggle the state of the main window, opening it if it
+REM is closed, or closing it if it is open.
+:
+DEF PROCmain_window_toggle
+!q% = MainWindow%
+SYS "Wimp_GetWindowState",,q%
+
+IF q%!32 AND (1<<17) THEN
+	SYS "Wimp_CloseWindow",,q%
+ELSE
+	q%!28 = -1
+	SYS "Wimp_OpenWindow",,q%
+	PROCicon_put_caret_at_end(MainWindow%, MainWindFileNameIcon%)
+	PROCexamine_clipboard
+ENDIF
+ENDPROC
+
+
 REM Close the main window.
 :
 DEF PROCmain_wind_close
@@ -31,15 +49,15 @@ REM \param taskname$	The name of the task owning the content.
 REM \param filetype%	The filetype of the content, or -1 for none.
 :
 DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
-LOCAL sprite$
-
-sprite$ = FNtypes_sprite_from_type(filetype%)
+LOCAL sprite$, validation%
 
 PROCicon_set_indirected_text(MainWindow%, MainWindFileNameIcon%, filename$)
 PROCicon_set_indirected_text(MainWindow%, MainWindOwnerIcon%, taskname$)
 PROCicon_set_indirected_text(MainWindow%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
 
-PROCset_ind(MainWindFileSprIcon%, "S" + sprite$ + ";R2")
+sprite$ = FNtypes_sprite_from_type(filetype%)
+validation% = FNicon_validation(MainWindow%, MainWindFileSprIcon%)
+IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2"
 
 SYS "Wimp_GetCaretPosition",,q%
 IF q%!0 = MainWindow% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
@@ -47,8 +65,8 @@ IF q%!0 = MainWindow% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
 PROCicon_set_shaded(MainWindow%, MainWindFileNameIcon%, FALSE)
 PROCicon_set_shaded(MainWindow%, MainWindFileSprIcon%, FALSE)
 PROCicon_set_shaded(MainWindow%, MainWindOKIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, MainWindOwnerIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, MainWindFileTypeIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindOwnerIcon%, filetype% = -1)
+PROCicon_set_shaded(MainWindow%, MainWindFileTypeIcon%, filetype% = -1)
 ENDPROC
 
 

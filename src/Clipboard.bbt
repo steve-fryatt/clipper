@@ -140,7 +140,7 @@ WHEN 1 : REM Message_DataSave
 
 		Owner% = b%!4
 		ClipboardCurrentType% = b%!40
-		PROCmain_wind_set_content(FNstring_read(b%+44), FNname(b%!4), ClipboardCurrentType%)
+		PROCmain_wind_set_content(FNstring_read(b%+44), FNclipboard_task_name_from_handle(b%!4), ClipboardCurrentType%)
 	ENDIF
 
 WHEN 2 : REM Message_DataSaveAck
@@ -285,23 +285,12 @@ MyRef%=block!8
 PROCmain_wind_set_proto_message("SearchOwner")
 ENDPROC
 
-DEF FNname(handle%)
-SYS "XTaskManager_TaskNameFromHandle",handle% TO NamePtr% ;Flags%
-IF Flags% AND 1 THEN ="???"
-=FNstring_read(NamePtr%)
-
-DEF PROCset_ind(Icon%,Text$)
-IF LEN(Text$)<>12 THEN Text$="sfile_xxx;r2"
-block!512=MainWindow%
-block!516=Icon%
-SYS "Wimp_GetIconState",,block+512
-Addr%=block!(32+512)
-$Addr%=Text$
-ENDPROC
-
 DEF PROCmouse_click
 CASE b%!12 OF
-  WHEN -2         : PROCtoggle(MainWindow%)
+WHEN -2
+	PROCmain_window_toggle
+	PROCexamine_clipboard
+
   WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNmain_wind_get_filename,-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
 WHEN InfoWindHandle%
@@ -314,19 +303,6 @@ IF block!12=-2 THEN
 	PROCmenu_create_iconbar(IconbarMenu%, block!0)
 ELSE
 	PROCmenu_create(IconbarMenu%, block!0, block!4)
-ENDIF
-ENDPROC
-
-DEF PROCtoggle(Window%)
-block!512=Window%
-SYS "Wimp_GetWindowState",,block+512
-IF block!(512+32) AND (1<<17) THEN
-  SYS "Wimp_CloseWindow",,block+512
-ELSE
-  block!(512+28)=-1
-  SYS "Wimp_OpenWindow",,block+512
-  PROCput_caret_in(3)
-  PROCexamine_clipboard
 ENDIF
 ENDPROC
 
@@ -372,14 +348,6 @@ $(block+44)=path$+CHR$0
 block!0=(LEN(path$)+48) AND &FC
 SYS "Wimp_SendMessage",17,block,Request%
 SaveRef%=block!8
-ENDPROC
-
-DEF PROCput_caret_in(Icon%)
-block!512=MainWindow%
-block!516=Icon%
-SYS "Wimp_GetIconState",,block+512
-IF block!(512+24) AND (1<<22) THEN ENDPROC
-SYS "Wimp_SetCaretPosition",MainWindow%,Icon%,&10000,0,-1,-1
 ENDPROC
 
 DEF PROCdrag_icon(Icon%)
@@ -441,3 +409,17 @@ LOCAL error%, flags%
 SYS "XOS_FSControl", 26, source$, destination$, %10 TO error% ;flags%
 IF flags% AND 1 THEN SYS "Wimp_ReportError", error%, &501, TaskName$, TaskSprite$, 1, 0
 ENDPROC
+
+
+REM Given a task handle, get the task name. Returns "???" if the
+REM handle can not be resolved.
+REM
+REM \param handle%	The task handle to look up.
+REM \return		The corresponding task name.
+:
+DEF FNclipboard_task_name_from_handle(handle%)
+LOCAL name%, flags%
+
+SYS "XTaskManager_TaskNameFromHandle",handle% TO name% ;flags%
+IF flags% AND 1 THEN ="???"
+=FNstring_read(name%)
