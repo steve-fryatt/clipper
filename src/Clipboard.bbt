@@ -158,7 +158,7 @@ WHEN 2 : REM Message_DataSaveAck
 
 		IF Owner% = TaskHandle% THEN PROCsend_save_ack
 	ELSE
-		PROCcopy(OurFile$, FNstring_read(b%+44))
+		PROCclipboard_copy_file(OurFile$, FNstring_read(b%+44))
 		Request% = b%!4
 		b%!12 = b%!8
 		b%!16 = 3
@@ -347,7 +347,7 @@ IF Check% AND INSTR(SavePath$,".")=0 THEN
 	message$ = FNmessage_lookup("DragSave")
 	PROCwimperror_report(message$, 1, %01, "")
 ENDIF
-IF Owner%=TaskHandle% THEN PROCcopy(OurFile$, SavePath$):ENDPROC
+IF Owner%=TaskHandle% THEN PROCclipboard_copy_file(OurFile$, SavePath$):ENDPROC
 block!0=44
 block!12=0
 block!16=&10 : REM Request clipboard data
@@ -429,8 +429,15 @@ SYS "Wimp_SendMessage",17,block,SaveDragTo%
 SaveDragTo%=-1
 ENDPROC
 
-DEF PROCcopy(From$, To$)
-SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
 
-IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, TaskName$
+REM Copy a file on disc, reporting any error via Wimp_ReportError.
+REM
+REM \param source$	The source file to be copied.
+REM \param destination$	The destination of the copy operation.
+:
+DEF PROCclipboard_copy_file(source$, destination$)
+LOCAL error%, flags%
+
+SYS "XOS_FSControl", 26, source$, destination$, %10 TO error% ;flags%
+IF flags% AND 1 THEN SYS "Wimp_ReportError", error%, &501, TaskName$, TaskSprite$, 1, 0
 ENDPROC
