@@ -16,11 +16,6 @@ LIBRARY "src/InfoWind.bbt"
 LIBRARY "src/MainWind.bbt"
 LIBRARY "src/Types.bbt"
 
-REM These values get replaced by tokenize.
-
-BuildVersion$ = "1.10"
-BuildDate$ = "01 Jul 2009"
-
 REM Allocate the Wimp memory blocks.
 
 DIM block 1024, scrap 256, a% 255

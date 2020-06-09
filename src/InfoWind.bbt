@@ -14,8 +14,12 @@ InfoWindEmailIcon% = 5
 InfoWindUrlIcon% = 6
 
 REM Set the Information Window date and version.
+REM NB: These values get replaced by tokenize.
 
-PROCicon_set_indirected_text(InfoWindHandle%, InfoWindDateIcon%, BuildVersion$+" ("+BuildDate$+")")
+build_version$ = "1.10"
+build_date$ = "01 Jul 2009"
+
+PROCicon_set_indirected_text(InfoWindHandle%, InfoWindDateIcon%, build_version$+" ("+build_date$+")")
 ENDPROC
 
 
