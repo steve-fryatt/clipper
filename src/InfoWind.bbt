@@ -29,7 +29,7 @@ REM \param button%	The mouse button used for the click.
 REM \param icon%	The icon over which the click occurred.
 :
 DEF PROCinfo_wind_click(button%, icon%)
-IF button% <> 4 THEN RETURN
+IF button% <> 4 THEN ENDPROC
 
 CASE icon% OF
 WHEN InfoWindEmailIcon%
