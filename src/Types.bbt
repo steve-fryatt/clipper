@@ -7,6 +7,7 @@ DEF FNtypes_sprite_from_type(filetype%)
 IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
 ="file_" + RIGHT$("000" + STR$~(filetype%), 3)
 
+
 REM Find the textual name of a filetype from its numeric value.
 REM
 REM \param filetype%	The filetype to look up.
