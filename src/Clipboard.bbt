@@ -108,12 +108,12 @@ CASE Code% OF
   WHEN 1   : IF block!12=SaveRef% THEN PROCsave_ack_to(SavePath$):ENDPROC
              IF block!12=MyRef% OR block!24=InternalHandle% THEN
                IF block!12<>MyRef% THEN
-                 PROCpe("Bad yourref in DataSave message")
+                 PROCmain_wind_set_proto_error("BadYourRef")
                ELSE
                  IF block!24<>InternalHandle% THEN
-                   PROCpe("Bad handle in DataSave message")
+                   PROCmain_wind_set_proto_error("BadHandle")
                  ELSE
-                   PROCproto("Found owner")
+                   PROCmain_wind_set_proto_message("FoundOwner")
                  ENDIF
                ENDIF
 
@@ -150,7 +150,7 @@ CASE Code% OF
                block!16=3
                SYS "XOS_File",23,OurFile$ TO Ob%,,,,Size%,,Type% ;Flags%
                IF (Flags% AND %1) OR Ob%<>1 THEN
-                 PROCpe("Bad clipboard file")
+                 PROCmain_wind_set_proto_error("BadClipFile")
                ELSE
                  block!36=Size%
                  block!40=Type%
@@ -169,14 +169,14 @@ CASE Code% OF
                  block!12=SaveDragRef% : REM Pass message on to dest app
                  SYS "Wimp_SendMessage",18,block,SaveDragTo%
                  SaveDragRef%=block!8
-                 PROCproto("Asking app to load data")
+                 PROCmain_wind_set_proto_message("AskToLoad")
                ENDIF
              ELSE
                PROCclaim_clipboard
                OurFile$=FNstrip(block+44)
                PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,OurFile$)
                PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"Clipboard"):Owner%=TaskHandle%
-               PROCproto("I own it")
+               PROCmain_wind_set_proto_message("ItsOurs")
                Type$=STR$~block!40
                PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
                PROCset_ind(0,"sfile_"+Type$+";r2")
@@ -199,7 +199,7 @@ CASE Code% OF
              ENDIF
   WHEN &10 : IF MyRef%<>block!8 THEN
                IF Owner%=TaskHandle% THEN
-                 PROCproto("Sending data myself")
+                 PROCmain_wind_set_proto_message("SendingData")
                  Request%=block!4
                  block!12=block!8
                  SYS "Wimp_SendMessage",19,block
@@ -222,12 +222,12 @@ ENDPROC
 
 DEF PROCack
 IF block!16=&4E383 OR block!16=&4AF80 THEN PROCurl_bounce(block):ENDPROC
-IF block!16=4 THEN PROCpe("Receiver died!"):SaveDragTo%=-1:ENDPROC
-IF block!8=SaveDragRef% THEN PROCproto("App not interested"):ENDPROC
+IF block!16=4 THEN PROCmain_wind_set_proto_error("RecDied"):SaveDragTo%=-1:ENDPROC
+IF block!8=SaveDragRef% THEN PROCmain_wind_set_proto_message("NoInterest"):ENDPROC
 IF block!8<>MyRef% THEN ENDPROC
 IF block!16<>&10 THEN ENDPROC
 PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,"None")
-PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"-"):Owner%=-1:PROCproto("No clipboard")
+PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"-"):Owner%=-1:PROCmain_wind_set_proto_message("NoClipboard")
 PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,"-")
 Type$="xxx"
 PROCset_ind(0,"sfile_xxx;r2")
@@ -251,7 +251,7 @@ block!36=4
 block!40=-1
 SYS "Wimp_SendMessage",18,block,0
 MyRef%=block!8
-PROCproto("Looking for owner")
+PROCmain_wind_set_proto_message("SearchOwner")
 ENDPROC
 
 DEF PROCput_caret(b)
@@ -371,7 +371,7 @@ block!36=4
 block!40=-1
 SYS "Wimp_SendMessage",18,block,Owner%
 SaveRef%=block!8
-PROCproto("Asking owner to save")
+PROCmain_wind_set_proto_message("AskToSave")
 ENDPROC
 
 DEF PROCsave_ack_to(path$)
@@ -429,7 +429,7 @@ block!40=EVAL("&"+Type$)
 $(block+44)=Name$+CHR$0
 SYS "Wimp_SendMessage",18,block,DestWin%,DestIcon% TO ,,SaveDragTo%
 SaveDragRef%=block!8
-PROCproto("Offering data")
+PROCmain_wind_set_proto_message("OfferData")
 ENDPROC
 
 DEF PROCsend_save_ack
@@ -443,38 +443,4 @@ DEF PROCcopy(From$, To$)
 SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
 
 IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, "Clipboard"
-ENDPROC
-
-REM Report a protocol error
-DEF PROCpe(Error$)
-scrap!0 = MainWindow%
-scrap!4 = 7
-SYS "Wimp_GetIconState", 0, scrap
-
-$(scrap!28) = Error$
-
-scrap!8 =  &0b000000
-scrap!12 = &0f000000
-SYS "Wimp_SetIconState", 0, scrap
-
-SYS "Wimp_GetWindowState", 0, scrap
-IF scrap!32 AND (1 << 16) THEN
-  REM Window is already open - bring it to the front
-  REM and enlarge it to show the error.
-  scrap!8 -= 128
-  scrap!28 = -1
-  SYS "Wimp_OpenWindow", 0, scrap
-ENDIF
-ENDPROC
-
-DEF PROCproto(Mess$)
-scrap!0 = MainWindow%
-scrap!4 = 7
-SYS "Wimp_GetIconState", 0, scrap
-
-$(scrap!28) = Mess$
-
-scrap!8 =  &07000000
-scrap!12 = &0f000000
-SYS "Wimp_SetIconState", 0, scrap
 ENDPROC

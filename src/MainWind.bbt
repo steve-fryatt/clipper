@@ -13,8 +13,55 @@ FileTypeIcon% = 2
 FileNameIcon% = 3
 OKIcon% = 4
 OwnerIcon% = 6
+MainWindProtoIcon% = 7
 
 ENDPROC
 
 
 
+
+
+
+
+
+REM Set the protocol message field to an error message, and enlarge the
+REM window to show it.
+REM
+REM \param token$	The error message token to display
+:
+DEF PROCmain_wind_set_proto_error(token$)
+LOCAL background%, message$
+
+message$ = FNmessage_lookup(token$)
+PROCicon_set_indirected_text(MainWindow%, MainWindProtoIcon%, message$)
+
+background% = FNicon_background_colour(MainWindow%, MainWindProtoIcon%)
+PROCicon_set_colours(MainWindow%, MainWindProtoIcon%, 11, background%)
+
+REM If the window is already open, bring it to the front and enlarge it
+REM to show the protocol message field.
+
+q%!0 = MainWindow%
+SYS "Wimp_GetWindowState",, q%
+
+IF q%!32 AND (1 << 16) THEN
+	q%!8 -= 128
+	q%!28 = -1
+	SYS "Wimp_OpenWindow",, q%
+ENDIF
+ENDPROC
+
+
+REM Set the protocol message field to a standard message.
+REM
+REM \param token$	The message token to display
+:
+DEF PROCmain_wind_set_proto_message(token$)
+LOCAL background%, message$
+
+message$ = FNmessage_lookup(token$)
+PROCicon_set_indirected_text(MainWindow%, MainWindProtoIcon%, message$)
+
+background% = FNicon_background_colour(MainWindow%, MainWindProtoIcon%)
+PROCicon_set_colours(MainWindow%, MainWindProtoIcon%, 7, background%)
+ENDPROC
