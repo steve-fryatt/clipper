@@ -94,7 +94,7 @@ WHILE NOT Quit%
 	WHEN 6:		IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
 	WHEN 7:		PROCuser_drag_box
 	WHEN 8:		IF block!24=13 THEN
-				PROCsave_clipboard(FNicon_get_text(3),TRUE,FALSE)
+				PROCsave_clipboard(FNicon_get_text(MainWindow%, 3),TRUE,FALSE)
 			ELSE
 				IF block!24=&1B THEN
 					PROCmain_wind_close
@@ -302,7 +302,7 @@ ENDPROC
 DEF PROCmouse_click
 CASE b%!12 OF
   WHEN -2         : PROCtoggle(MainWindow%)
-  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNicon_get_text(3),-1,0)
+  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNicon_get_text(MainWindow%, 3),-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(b%!8, b%!16)
@@ -422,7 +422,7 @@ SYS "Wimp_GetPointerInfo",,block
 IF block!12=MainWindow% THEN ENDPROC
 DestWin%=block!12
 DestIcon%=block!16
-Name$=FNleaf(FNicon_get_text(3))
+Name$=FNleaf(FNicon_get_text(MainWindow%, 3))
 block!28=block!0
 block!32=block!4
 block!0=(48+LEN(Name$)) AND &FC
