@@ -175,7 +175,7 @@ CASE Code% OF
                PROCclaim_clipboard
                OurFile$=FNstrip(block+44)
                PROCicon_set_indirected_text(MainWindow%, FileNameIcon%,OurFile$)
-               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%,"Clipboard"):Owner%=TaskHandle%
+               PROCicon_set_indirected_text(MainWindow%, OwnerIcon%, TaskName$):Owner%=TaskHandle%
                PROCmain_wind_set_proto_message("ItsOurs")
                Type$=STR$~block!40
                PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%,FNtype(Type$))
@@ -344,7 +344,7 @@ ENDPROC
 DEF PROCreport(Error$)
 block!512=0
 $(block+516)=Error$
-SYS "Wimp_ReportError",block+512,%101,"Clipboard"
+SYS "Wimp_ReportError",block+512,%101,TaskName$
 ENDPROC
 
 DEF FNleaf(Text$)
@@ -442,5 +442,5 @@ ENDPROC
 DEF PROCcopy(From$, To$)
 SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
 
-IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, "Clipboard"
+IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, TaskName$
 ENDPROC
