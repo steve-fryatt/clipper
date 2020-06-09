@@ -33,11 +33,11 @@ REM \param filetype%	The filetype of the content, or -1 for none.
 DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
 LOCAL sprite$
 
-sprite$ = FNclipboard_sprite_from_type(filetype%)
+sprite$ = FNtypes_sprite_from_type(filetype%)
 
 PROCicon_set_indirected_text(MainWindow%, MainWindFileNameIcon%, filename$)
 PROCicon_set_indirected_text(MainWindow%, MainWindOwnerIcon%, taskname$)
-PROCicon_set_indirected_text(MainWindow%, MainWindFileTypeIcon%, FNclipboard_name_from_type(filetype%))
+PROCicon_set_indirected_text(MainWindow%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
 
 PROCset_ind(MainWindFileSprIcon%, "S" + sprite$ + ";R2")
 

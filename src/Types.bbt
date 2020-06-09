@@ -1,0 +1,24 @@
+REM Find a file icon sprite for a numeric filetype.
+REM
+REM \param filetype%	The filetype to look up.
+REM \return		The sprite name, in the Wimp pool.
+:
+DEF FNtypes_sprite_from_type(filetype%)
+IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
+="file_" + RIGHT$("000" + STR$~(filetype%), 3)
+
+REM Find the textual name of a filetype from its numeric value.
+REM
+REM \param filetype%	The filetype to look up.
+REM \return		The textual name.
+:
+DEF FNtypes_name_from_type(filetype%)
+LOCAL hex$, len%, flags%
+
+hex$ = STR$~(filetype%)
+
+SYS "XOS_ReadVarVal", "File$Type_"+hex$, q%, 256, 0, 3 TO ,,len%; flags%
+IF flags% AND 1 THEN =hex$
+
+q%?len% = 0
+=FNstring_read(q%)

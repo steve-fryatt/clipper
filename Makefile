@@ -30,6 +30,7 @@ APP := !Clipboard
 
 SRCS := Clipboard.bbt	\
 	InfoWind.bbt	\
-	MainWind.bbt
+	MainWind.bbt	\
+	Types.bbt
 
 include $(SFTOOLS_MAKE)/Basic

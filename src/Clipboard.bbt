@@ -14,6 +14,7 @@ LIBRARY "BASIC:Window"
 
 LIBRARY "src/InfoWind.bbt"
 LIBRARY "src/MainWind.bbt"
+LIBRARY "src/Types.bbt"
 
 REM These values get replaced by tokenize.
 
@@ -396,7 +397,7 @@ bk!0=MinX%+Xoff%
 bk!4=MinY%+bk!16
 bk!8=MaxX%+Xoff%
 bk!12=MaxY%+bk!16
-SYS "DragASprite_Start",%11000101,1,FNclipboard_sprite_from_type(ClipboardCurrentType%),bk
+SYS "DragASprite_Start",%11000101,1,FNtypes_sprite_from_type(ClipboardCurrentType%),bk
 ENDPROC
 
 DEF PROCuser_drag_box
@@ -433,18 +434,3 @@ SYS "XOS_FSControl", 26, From$, To$, %10 TO r0 ;v%
 
 IF v% AND 1 THEN SYS "Wimp_ReportError", r0, %101, TaskName$
 ENDPROC
-
-DEF FNclipboard_sprite_from_type(filetype%)
-IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
-="file_" + RIGHT$("000" + STR$~(filetype%), 3)
-
-DEF FNclipboard_name_from_type(filetype%)
-LOCAL hex$, len%, flags%
-
-hex$ = STR$~(filetype%)
-
-SYS "XOS_ReadVarVal", "File$Type_"+hex$, q%, 256, 0, 3 TO ,,len%; flags%
-IF flags% AND 1 THEN =hex$
-
-q%?len% = 0
-=FNstring_read(q%)
