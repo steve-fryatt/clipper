@@ -24,9 +24,11 @@ TaskName:Clipboard
 
 TaskSpr:!clipboard
 
-SupportURL:http://www.stevefryatt.org.uk/software/clipbiard/
+SupportURL:http://www.stevefryatt.org.uk/software/clipboard/
 
 URLFailed:Could not find an application to launch the given URL.
+BadClipFileErr:The clipboard file was not found, or was an invalid object.
+DragSave:To save, drag the file icon to a directory viewer.
 
 # Protocol Messages
 

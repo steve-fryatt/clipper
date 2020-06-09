@@ -8,15 +8,13 @@ SYS "Wimp_CreateWindow",,b% TO MainWindow%
 
 REM The icon handles.
 
-FileSprIcon% = 0
-FileTypeIcon% = 2
-FileNameIcon% = 3
-OKIcon% = 4
-OwnerIcon% = 6
+MainWindFileSprIcon% = 0
+MainWindFileTypeIcon% = 2
+MainWindFileNameIcon% = 3
+MainWindOKIcon% = 4
+MainWindOwnerIcon% = 6
 MainWindProtoIcon% = 7
-
 ENDPROC
-
 
 
 REM Close the main window.
@@ -26,28 +24,40 @@ PROCwindow_close(MainWindow%)
 ENDPROC
 
 
-
-
+REM Set the content fields to reflect the current clipboard content.
+REM
+REM \param filename$	The filename of the content.
+REM \param taskname$	The name of the task owning the content.
+REM \param filetype%	The filetype of the content, or -1 for none.
+:
 DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
 LOCAL sprite$
 
 sprite$ = FNclipboard_sprite_from_type(filetype%)
 
-PROCicon_set_indirected_text(MainWindow%, FileNameIcon%, filename$)
-PROCicon_set_indirected_text(MainWindow%, OwnerIcon%, taskname$)
-PROCicon_set_indirected_text(MainWindow%, FileTypeIcon%, FNclipboard_name_from_type(filetype%))
+PROCicon_set_indirected_text(MainWindow%, MainWindFileNameIcon%, filename$)
+PROCicon_set_indirected_text(MainWindow%, MainWindOwnerIcon%, taskname$)
+PROCicon_set_indirected_text(MainWindow%, MainWindFileTypeIcon%, FNclipboard_name_from_type(filetype%))
 
-PROCset_ind(FileSprIcon%, "S" + sprite$ + ";R2")
+PROCset_ind(MainWindFileSprIcon%, "S" + sprite$ + ";R2")
 
 SYS "Wimp_GetCaretPosition",,q%
 IF q%!0 = MainWindow% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
 
-PROCicon_set_shaded(MainWindow%, FileNameIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, FileSprIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, OKIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, OwnerIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, FileTypeIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindFileNameIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindFileSprIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindOKIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindOwnerIcon%, FALSE)
+PROCicon_set_shaded(MainWindow%, MainWindFileTypeIcon%, FALSE)
 ENDPROC
+
+
+REM Get the current filename from the filename field.
+REM
+REM \return		The filename in the field.
+:
+DEF FNmain_wind_get_filename
+=FNicon_get_text(MainWindow%, MainWindFileNameIcon%)
 
 
 REM Set the protocol message field to an error message, and enlarge the

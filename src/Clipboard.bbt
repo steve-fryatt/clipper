@@ -94,7 +94,7 @@ WHILE NOT Quit%
 	WHEN 6:		IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
 	WHEN 7:		PROCuser_drag_box
 	WHEN 8:		IF block!24=13 THEN
-				PROCsave_clipboard(FNicon_get_text(MainWindow%, 3),TRUE,FALSE)
+				PROCsave_clipboard(FNmain_wind_get_filename,TRUE,FALSE)
 			ELSE
 				IF block!24=&1B THEN
 					PROCmain_wind_close
@@ -117,7 +117,7 @@ REM Handle incoming Wimp messages.
 REM On entry, b% is assumed to point to the Wimp_Poll block.
 :
 DEF PROCclipper_process_message
-LOCAL flags%
+LOCAL flags%, message$
 
 CASE b%!16 OF
 WHEN 0 : REM Message_Quit
@@ -225,12 +225,13 @@ WHEN &10 : REM Message_DataRequest
 
 			SYS "XOS_File", 23, OurFile$ TO Ob%,,,,Size%,,Type% ;flags%
 			IF (flags% AND %1) OR (Ob% <> 1) THEN
-				PROCreport("Bad clipboard file")
+				message$ = FNmessage_lookup("BadClipFileErr")
+				PROCwimperror_report(message$, 2, %10, "")
 			ELSE
 				b%!36 = Size%
 				b%!16 = 1
 				b%!40 = Type%
-				Leaf$ = FNleaf(OurFile$)
+				Leaf$ = FNstring_leafname(OurFile$)
 				$(b%+44) = Leaf$ + CHR$(0)
 				b%!0 = 44 + (LEN(Leaf$) + 4) AND &FC
 				SYS "Wimp_SendMessage", 17, b%, Request%
@@ -302,7 +303,7 @@ ENDPROC
 DEF PROCmouse_click
 CASE b%!12 OF
   WHEN -2         : PROCtoggle(MainWindow%)
-  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNicon_get_text(MainWindow%, 3),-1,0)
+  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNmain_wind_get_filename,-1,0)
                     IF block!16=0 THEN PROCdrag_icon(0)
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(b%!8, b%!16)
@@ -347,22 +348,14 @@ bk!20=%100
 SYS "Wimp_SendMessage",18,bk,0
 ENDPROC
 
-DEF PROCreport(Error$)
-block!512=0
-$(block+516)=Error$
-SYS "Wimp_ReportError",block+512,%101,TaskName$
-ENDPROC
-
-DEF FNleaf(Text$)
-Dot%=0
-FOR A%=1 TO LEN(Text$)
-  IF MID$(Text$,A%,1)="." THEN Dot%=A%
-NEXT A%
-=MID$(Text$,Dot%+1)
-
 DEF PROCsave_clipboard(S$,Check%,UseWindow%)
+LOCAL message$
+
 SavePath$=S$
-IF Check% AND INSTR(SavePath$,".")=0 THEN PROCreport("To save, drag icon to a directory viewer"):ENDPROC
+IF Check% AND INSTR(SavePath$,".")=0 THEN
+	message$ = FNmessage_lookup("DragSave")
+	PROCwimperror_report(message$, 1, %01, "")
+ENDIF
 IF Owner%=TaskHandle% THEN PROCcopy(OurFile$, SavePath$):ENDPROC
 block!0=44
 block!12=0
@@ -422,7 +415,7 @@ SYS "Wimp_GetPointerInfo",,block
 IF block!12=MainWindow% THEN ENDPROC
 DestWin%=block!12
 DestIcon%=block!16
-Name$=FNleaf(FNicon_get_text(MainWindow%, 3))
+Name$=FNstring_leafname(FNmain_wind_get_filename)
 block!28=block!0
 block!32=block!4
 block!0=(48+LEN(Name$)) AND &FC
