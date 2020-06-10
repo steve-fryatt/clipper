@@ -29,6 +29,7 @@ ARCHIVE := clipper
 APP := !Clipper
 
 SRCS := Clipper.bbt	\
+	Clipboard.bbt	\
 	InfoWind.bbt	\
 	MainWind.bbt	\
 	Types.bbt

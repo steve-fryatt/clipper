@@ -1,6 +1,26 @@
-REM >Prog:!Clipper.!RunImage
+REM >!Clipper
 REM
-REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
 
 LIBRARY "BASIC:Icon"
 LIBRARY "BASIC:Menu"
@@ -12,102 +32,62 @@ LIBRARY "BASIC:Url"
 LIBRARY "BASIC:WimpError"
 LIBRARY "BASIC:Window"
 
+LIBRARY "src/Clipboard.bbt"
 LIBRARY "src/InfoWind.bbt"
 LIBRARY "src/MainWind.bbt"
 LIBRARY "src/Types.bbt"
 
-REM Allocate the Wimp memory blocks.
-
-DIM block 1024, scrap 256, a% 255
-b% = block : q% = scrap
-
-REM Configure the basic error handling for initialisation.
+REM Set up the basic error handling, then initialise.
 
 PROCwimperror_initialise("Clipper", "!clipper")
 ON ERROR result% = FNwimperror_program : END
 
-REM Locate the application resources.
+ClipperTaskHandle% = -1
 
-Resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
-
-REM Load the messages file.
-
-PROCmessage_initialise(Resources$ + "Messages")
-
-TaskName$ = FNmessage_lookup("TaskName")
-TaskSprite$ = FNmessage_lookup("TaskSpr")
-PROCwimperror_initialise(TaskName$, TaskSprite$)
-
-InternalHandle% = -&11223344
-
-DIM TASK 5
-$TASK="TASK"
-SYS "Wimp_Initialise", 200, !TASK, TaskName$ TO ,TaskHandle%
-
-PROCtemplate_open(Resources$ + "Templates")
-PROCinfo_wind_initialise
-PROCmain_wind_initialise
-PROCtemplate_close
-
-REM Create the iconbar icon
-
-block!0=-1
-block!4=0
-block!8=0
-block!12=76
-block!16=68
-block!20=%11000000011010
-$(block+24)=TaskSprite$
-SYS "Wimp_CreateIcon",,block
-SaveDragTo%=-1
-Quit%=FALSE:Owner%=-1:OurFile$="":SaveRef%=-1:SaveDragRef%=-1
-
-REM Initialise and load the menu templates
-
-PROCmenu_initialise
-
-block!0 = InfoWindHandle%
-PROCmenu_load_templates(Resources$ + "Menus", block)
-IconbarMenu% = block!0
-
-REM Clipboard state data.
-
-ClipboardCurrentType% = -1
-
-REM Check the clipboard contents.
-
-PROCexamine_clipboard
+PROCclipper_initialise
 
 REM Poll the Wimp until exit.
+
+Quit%=FALSE
 
 ON ERROR Quit% = FNwimperror_program
 
 WHILE NOT Quit%
-	SYS "Wimp_Poll", %110001, b% TO Reason%
-	CASE Reason% OF
-	WHEN 2:		SYS "Wimp_OpenWindow",,block
-	WHEN 3:		SYS "Wimp_CloseWindow",,block
-	WHEN 6:		IF block!8<>2 THEN PROCmouse_click ELSE PROCmenu
-	WHEN 7:		PROCuser_drag_box
-	WHEN 8:		IF block!24=13 THEN
-				PROCsave_clipboard(FNmain_wind_get_filename,TRUE,FALSE)
-			ELSE
-				IF block!24=&1B THEN
-					PROCmain_wind_close
-				ELSE
-					SYS "Wimp_ProcessKey", block!24
-				ENDIF
-			ENDIF
-	WHEN 9 :	IF block!0=1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
-			IF block!0=2 THEN Quit%=TRUE
-	WHEN 17,18 :	PROCclipper_process_message
-	WHEN 19 :	PROCclipper_process_bounce
-	ENDCASE
+	PROCclipper_poll
 ENDWHILE
 
-SYS "Wimp_CloseDown", TaskHandle%, !TASK
-SYS "OS_Exit"
+IF ClipperTaskHandle% <> -1 THEN SYS "Wimp_CloseDown", ClipperTaskHandle%, !TASK
 END
+
+
+REM Handle calls to Wimp_Poll and process the responses.
+:
+DEF PROCclipper_poll
+LOCAL reason%
+
+SYS "Wimp_Poll", %110001, b% TO reason%
+
+CASE reason% OF
+	WHEN 2:		SYS "Wimp_OpenWindow",,b%
+	WHEN 3:		SYS "Wimp_CloseWindow",,b%
+	WHEN 6:		IF b%!8 <> 2 THEN PROCmouse_click ELSE PROCmenu
+	WHEN 7:		PROCuser_drag_box
+	WHEN 8:		IF b%!24=13 THEN
+				PROCsave_clipboard(FNmain_wind_get_filename, TRUE, FALSE)
+			ELSE
+				IF b%!24 = &1B THEN
+					PROCmain_wind_close
+				ELSE
+					SYS "Wimp_ProcessKey", b%!24
+				ENDIF
+			ENDIF
+	WHEN 9 :	IF b%!0 = 1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
+			IF b%!0 = 2 THEN Quit%=TRUE
+	WHEN 17,18 :	PROCclipper_process_message
+	WHEN 19 :	PROCclipper_process_bounce
+ENDCASE
+ENDPROC
+
 
 REM Handle incoming Wimp messages.
 REM On entry, b% is assumed to point to the Wimp_Poll block.
@@ -151,7 +131,7 @@ WHEN 2 : REM Message_DataSaveAck
 
 		REM If we own the clipboard, send the ack now.
 
-		IF Owner% = TaskHandle% THEN PROCsend_save_ack
+		IF Owner% = ClipperTaskHandle% THEN PROCsend_save_ack
 	ELSE
 		PROCclipboard_copy_file(OurFile$, FNstring_read(b%+44))
 		Request% = b%!4
@@ -188,7 +168,7 @@ WHEN 3 : REM Message_DataLoad
 	ELSE
 		PROCclaim_clipboard
 		OurFile$ = FNstring_read(b%+44)
-		Owner% = TaskHandle%
+		Owner% = ClipperTaskHandle%
 		ClipboardCurrentType% = b%!40
 		PROCmain_wind_set_content(OurFile$, TaskName$, ClipboardCurrentType%)
 		PROCmain_wind_set_proto_message("ItsOurs")
@@ -203,7 +183,7 @@ WHEN 4 : REM Message_DataLoadAck
 
 WHEN &F : REM Message_ClaimEntity
 	IF (b%!20 AND 4) THEN
-		IF b%!4 <> TaskHandle% THEN
+		IF b%!4 <> ClipperTaskHandle% THEN
 			Owner% = -1
 			PROCexamine_clipboard
 		ENDIF
@@ -211,7 +191,7 @@ WHEN &F : REM Message_ClaimEntity
 
 WHEN &10 : REM Message_DataRequest
 	IF MyRef% <> b%!8 THEN
-		IF Owner% = TaskHandle% THEN
+		IF Owner% = ClipperTaskHandle% THEN
 			PROCmain_wind_set_proto_message("SendingData")
 			Request% = b%!4
 			b%!12 = b%!8
@@ -266,8 +246,85 @@ OTHERWISE
 ENDPROC
 
 
+REM Initialise Clipper, both internally and with the Wimp.
+:
+DEF PROCclipper_initialise
+DIM b% 1024, q% 256, a% 255
+block = b% : REM Lose this once all references to block have been expunged.
+
+REM Locate the application resources.
+
+Resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
+
+REM Load the messages file.
+
+PROCmessage_initialise(Resources$ + "Messages")
+
+TaskName$ = FNmessage_lookup("TaskName")
+TaskSprite$ = FNmessage_lookup("TaskSpr")
+PROCwimperror_initialise(TaskName$, TaskSprite$)
+
+InternalHandle% = -&11223344
+
+DIM TASK 5
+$TASK="TASK"
+SYS "Wimp_Initialise", 200, !TASK, TaskName$ TO ,ClipperTaskHandle%
+
+PROCtemplate_open(Resources$ + "Templates")
+PROCinfo_wind_initialise
+PROCmain_wind_initialise
+PROCtemplate_close
+
+REM Create the iconbar icon
+
+b%!0 = -1
+b%!4 = 0
+b%!8 = 0
+b%!12 = 76
+b%!16 = 68
+b%!20 = %11000000011010
+$(b%+24) = TaskSprite$
+SYS "Wimp_CreateIcon",,b%
+
+SaveDragTo% = -1
+Owner% = -1
+OurFile$ = ""
+SaveRef% = -1
+SaveDragRef% = -1
+
+REM Initialise and load the menu templates
+
+PROCmenu_initialise
+
+b%!0 = InfoWindHandle%
+PROCmenu_load_templates(Resources$ + "Menus", b%)
+IconbarMenu% = b%!0
+
+REM Clipboard state data.
+
+ClipboardCurrentType% = -1
+
+REM Check the clipboard contents.
+
+PROCexamine_clipboard
+ENDPROC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 DEF PROCexamine_clipboard
-IF Owner%=TaskHandle% THEN ENDPROC
+IF Owner%=ClipperTaskHandle% THEN ENDPROC
 block!0=44
 block!12=0
 block!16=&10
@@ -318,7 +375,7 @@ IF Check% AND INSTR(SavePath$,".")=0 THEN
 	message$ = FNmessage_lookup("DragSave")
 	PROCwimperror_report(message$, 1, %01, "")
 ENDIF
-IF Owner%=TaskHandle% THEN PROCclipboard_copy_file(OurFile$, SavePath$):ENDPROC
+IF Owner%=ClipperTaskHandle% THEN PROCclipboard_copy_file(OurFile$, SavePath$):ENDPROC
 block!0=44
 block!12=0
 block!16=&10 : REM Request clipboard data
