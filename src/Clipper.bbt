@@ -98,8 +98,7 @@ WHEN -2
 	PROCclipboard_examine
 
 WHEN MainWindHandle%
-	IF b%!16=4 THEN PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
-	IF b%!16=0 THEN PROCmain_wind_drag_icon(MainWindHandle%, 0)
+	PROCmain_wind_click(b%!8, b%!16)
 
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(b%!8, b%!16)

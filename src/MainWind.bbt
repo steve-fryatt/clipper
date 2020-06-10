@@ -40,6 +40,22 @@ MainWindProtoIcon% = 7
 ENDPROC
 
 
+REM Handle clicks in the main window.
+REM
+REM \param button%	The mouse button used for the click.
+REM \param icon%	The icon over which the click occurred.
+:
+DEF PROCmain_wind_click(button%, icon%)
+IF button% <> 4 THEN ENDPROC
+
+CASE icon% OF
+WHEN MainWindOKIcon%
+	PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
+WHEN MainWindFileSprIcon%
+	PROCmain_wind_drag_icon(MainWindHandle%, MainWindFileSprIcon%)
+ENDCASE
+ENDPROC
+
 REM Toggle the state of the main window, opening it if it
 REM is closed, or closing it if it is open.
 :
