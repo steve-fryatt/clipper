@@ -45,6 +45,13 @@ ClipboardSaveDestinationTask% = -1
 REM The path on which we're saving the clipboard data.
 ClipboardSavePath$ = ""
 
+REM The MyRef of the last datavase message that we've sent.
+ClipboardSaveDragMyRef% = -1
+
+
+OurFile$ = ""
+SaveRef% = -1
+
 ENDPROC
 
 
@@ -163,20 +170,20 @@ ENDPROC
 DEF PROCclipboard_message_data_save_ack(message%)
 LOCAL flags%, sender_handle%, object%, size%, type%
 
-IF message%!12 = SaveDragRef% THEN
+IF message%!12 = ClipboardSaveDragMyRef% THEN
 	REM Dragged-to app wants the file - grab it from clip owner
-	SaveDragRef% = message%!8
+	ClipboardSaveDragMyRef% = message%!8
 
 	REM Ack the message whatever happens
-	message%!12 = SaveDragRef%				: REM Should we do this??
+	message%!12 = ClipboardSaveDragMyRef%				: REM Should we do this??
 	SYS "Wimp_SendMessage", 19, message%, message%!4	: REM Is it required??
 
-	PROCclipboard_save_data(FNstring_read(message% + 44), FALSE, TRUE)
+	PROCclipboard_save_data(FNstring_read(message% + 44), message%, TRUE)
 
 	REM If we own the clipboard, send the ack now.
 
 	IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN
-		message%!12 = SaveDragRef%
+		message%!12 = ClipboardSaveDragMyRef%
 		message%!16 = 3 : REM Message_DataLoad
 		SYS "Wimp_SendMessage", 17, message%, ClipboardSaveDestinationTask%
 		ClipboardSaveDestinationTask% = -1
@@ -211,9 +218,9 @@ IF message%!12 = SaveRef% THEN
 
 		REM Pass message on to dest app
 
-		message%!12 = SaveDragRef%
+		message%!12 = ClipboardSaveDragMyRef%
 		SYS "Wimp_SendMessage", 18, message%, ClipboardSaveDestinationTask%
-		SaveDragRef% = message%!8
+		ClipboardSaveDragMyRef% = message%!8
 		PROCmain_wind_set_proto_message("AskToLoad")
 	ENDIF
 ELSE
@@ -230,7 +237,7 @@ ENDPROC
 
 DEF PROCclipboard_message_data_load_ack(message%)
 IF ClipboardSaveDestinationTask% <> -1 THEN
-	message%%!12 = SaveFromRef%
+	message%!12 = SaveFromRef%
 	SYS "Wimp_SendMessage", 17, message%, SaveDragFrom%
 	ClipboardSaveDestinationTask% = -1
 ENDIF
@@ -244,7 +251,7 @@ ClipboardSaveDestinationTask% = -1
 ENDPROC
 
 DEF PROCclipboard_message_bounce(message%)
-	IF message%!8 = SaveDragRef% THEN
+	IF message%!8 = ClipboardSaveDragMyRef% THEN
 		PROCmain_wind_set_proto_message("NoInterest")
 		ENDPROC
 	ENDIF
@@ -299,6 +306,16 @@ SYS "Wimp_SendMessage", 18, q%, 0
 ENDPROC
 
 
+REM Following our file icon being dragged to a save target, send a
+REM Message_DataSave to the target window and icon to see if the
+REM other task is interested in responding.
+REM
+REM \param xpos%	The X position of the save target.
+REM \param ypos%	The Y position of the save target.
+REM \param name$	The leafname of the file to be saved.
+REM \param window%	The window containing the save target.
+REM \param icon%	The icon containing the save target.
+:
 DEF PROCclipboard_start_drag_save(xpos%, ypos%, name$, window%, icon%)
 b%!0 = (48 + LEN(name$)) AND &FC
 b%!12 = 0
@@ -311,38 +328,59 @@ b%!36 = 0
 b%!40 = ClipboardCurrentType%
 $(b%+44) = name$ + CHR$(0)
 SYS "Wimp_SendMessage", 18, b%, window%, icon% TO ,,ClipboardSaveDestinationTask%
-SaveDragRef% = b%!8
+ClipboardSaveDragMyRef% = b%!8
 PROCmain_wind_set_proto_message("OfferData")
 ENDPROC
 
 
+REM Initialise a save of the clipboard data to the given filename, which
+REM will either be carried out immediately if we own the clipboard, or
+REM by sending a Message_DataRequest to the owner if we don't.
+REM
+REM \param filename$	The filename to which to save the file.
+REM \param message%	The block in which to build the message.
+REM \param use_message%	Treat the message block as being the data from
+REM			an earlier Message_DataSaveAck.
 
-
-DEF PROCclipboard_save_data(S$,Check%,UseWindow%)
+DEF PROCclipboard_save_data(filename$, message%, use_message%)
 LOCAL message$
 
-ClipboardSavePath$=S$
-IF Check% AND INSTR(ClipboardSavePath$,".")=0 THEN
+ClipboardSavePath$ = filename$
+
+REM If this is a direct save, check that there's a full path name
+REM present in the supplied filename.
+
+IF (NOT use_message%) AND (INSTR(ClipboardSavePath$,".") = 0) THEN
 	message$ = FNmessage_lookup("DragSave")
 	PROCwimperror_report(message$, 1, %01, "")
+	ENDPROC
 ENDIF
-IF ClipboardCurrentOwnerTask%=ClipperTaskHandle% THEN PROCclipboard_copy_file(OurFile$, ClipboardSavePath$):ENDPROC
-b%!0=44
-b%!12=0
-b%!16=&10 : REM Request clipboard data
-IF UseWindow% = FALSE THEN
-  b%!20=-3
-  b%!24=ClipboardInternalHandle%
-  b%!28=640
-  b%!32=512
+
+REM If we own the clipboard, we can just copy our file to the destination.
+
+IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN
+	PROCclipboard_copy_file(OurFile$, ClipboardSavePath$)
+	ENDPROC
 ENDIF
-b%!36=4
-b%!40=-1
-SYS "Wimp_SendMessage",18,b%,ClipboardCurrentOwnerTask%
-SaveRef%=b%!8
+
+REM Otherwise, we need to send a Message_DataRequest to the clipboard
+REM owner to request the clipboard data.
+
+message%!0 = 44
+message%!12 = 0
+message%!16 = &10 : REM Message_DataRequest
+IF NOT use_message% THEN
+	message%!20 = -3
+	message%!24 = ClipboardInternalHandle%
+	message%!28 = 640
+	message%!32 = 512
+ENDIF
+message%!36 = 4
+message%!40 = -1
+SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask%
+SaveRef% = message%!8
 PROCmain_wind_set_proto_message("AskToSave")
 ENDPROC
-
 
 
 REM Copy a file on disc, reporting any error via Wimp_ReportError.

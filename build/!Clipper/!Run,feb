@@ -26,5 +26,5 @@ Set Clipper$Dir <Obey$Dir>
 
 IconSprites <Clipper$Dir>.!Sprites
 
-WimpSlot -min 40k -max 40k
+WimpSlot -min 64k -max 64k
 <Clipper$Dir>.!RunImage

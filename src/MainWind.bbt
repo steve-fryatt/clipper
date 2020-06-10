@@ -50,11 +50,25 @@ IF button% <> 4 THEN ENDPROC
 
 CASE icon% OF
 WHEN MainWindOKIcon%
-	PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
+	PROCclipboard_save_data(FNmain_wind_get_filename, b%, FALSE)
 WHEN MainWindFileSprIcon%
 	PROCmain_wind_drag_icon(MainWindHandle%, MainWindFileSprIcon%)
 ENDCASE
 ENDPROC
+
+
+REM Handle keypresses in the main window.
+REM
+REM \param key%		The key which was pressed.
+:
+DEF PROCmain_wind_keypress(key%)
+CASE key% OF
+WHEN 13 : PROCclipboard_save_data(FNmain_wind_get_filename, b%, FALSE)
+WHEN 27 : PROCmain_wind_close
+OTHERWISE : SYS "Wimp_ProcessKey", key%
+ENDCASE
+ENDPROC
+
 
 REM Toggle the state of the main window, opening it if it
 REM is closed, or closing it if it is open.

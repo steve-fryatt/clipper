@@ -67,21 +67,13 @@ DEF PROCclipper_poll
 LOCAL reason%
 
 SYS "Wimp_Poll", %110001, b% TO reason%
-
+*ReportTrace
 CASE reason% OF
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
 	WHEN 6:		IF b%!8 <> 2 THEN PROCclipper_mouse_click(b%) ELSE PROCclipper_menu(b%)
 	WHEN 7:		PROCmain_window_drag_box
-	WHEN 8:		IF b%!24=13 THEN
-				PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
-			ELSE
-				IF b%!24 = &1B THEN
-					PROCmain_wind_close
-				ELSE
-					SYS "Wimp_ProcessKey", b%!24
-				ENDIF
-			ENDIF
+	WHEN 8:		PROCclipper_keypress(b%)
 	WHEN 9 :	IF b%!0 = 1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
 			IF b%!0 = 2 THEN Quit%=TRUE
 	WHEN 17,18 :	PROCclipper_process_message(b%)
@@ -105,6 +97,20 @@ WHEN MainWindHandle%
 
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(pointer%!8, pointer%!16)
+ENDCASE
+ENDPROC
+
+
+REM Handle keypresses in Clipper windows.
+REM
+REM \param keypress%	Pointer to the Wimp_Poll block
+:
+DEF PROCclipper_keypress(keypress%)
+CASE keypress%!0 OF
+WHEN MainWindHandle%
+	PROCmain_wind_keypress(keypress%!24)
+OTHERWISE
+	SYS "Wimp_ProcessKey", keypress%!24
 ENDCASE
 ENDPROC
 
