@@ -27,7 +27,7 @@ REM Load the main window template and initialise the variables.
 :
 DEF PROCmain_wind_initialise
 PROCtemplate_load_claim("Main", b%, 1024, -1)
-SYS "Wimp_CreateWindow",,b% TO MainWindow%
+SYS "Wimp_CreateWindow",,b% TO MainWindHandle%
 
 REM The icon handles.
 
@@ -44,7 +44,7 @@ REM Toggle the state of the main window, opening it if it
 REM is closed, or closing it if it is open.
 :
 DEF PROCmain_window_toggle
-!q% = MainWindow%
+!q% = MainWindHandle%
 SYS "Wimp_GetWindowState",,q%
 
 IF q%!32 AND (1<<17) THEN
@@ -52,8 +52,7 @@ IF q%!32 AND (1<<17) THEN
 ELSE
 	q%!28 = -1
 	SYS "Wimp_OpenWindow",,q%
-	PROCicon_put_caret_at_end(MainWindow%, MainWindFileNameIcon%)
-	PROCexamine_clipboard
+	PROCicon_put_caret_at_end(MainWindHandle%, MainWindFileNameIcon%)
 ENDIF
 ENDPROC
 
@@ -61,7 +60,7 @@ ENDPROC
 REM Close the main window.
 :
 DEF PROCmain_wind_close
-PROCwindow_close(MainWindow%)
+PROCwindow_close(MainWindHandle%)
 ENDPROC
 
 
@@ -74,22 +73,22 @@ REM \param filetype%	The filetype of the content, or -1 for none.
 DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
 LOCAL sprite$, validation%
 
-PROCicon_set_indirected_text(MainWindow%, MainWindFileNameIcon%, filename$)
-PROCicon_set_indirected_text(MainWindow%, MainWindOwnerIcon%, taskname$)
-PROCicon_set_indirected_text(MainWindow%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
+PROCicon_set_indirected_text(MainWindHandle%, MainWindFileNameIcon%, filename$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindOwnerIcon%, taskname$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
 
 sprite$ = FNtypes_sprite_from_type(filetype%)
-validation% = FNicon_validation(MainWindow%, MainWindFileSprIcon%)
+validation% = FNicon_validation(MainWindHandle%, MainWindFileSprIcon%)
 IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2"
 
 SYS "Wimp_GetCaretPosition",,q%
-IF q%!0 = MainWindow% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
+IF q%!0 = MainWindHandle% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
 
-PROCicon_set_shaded(MainWindow%, MainWindFileNameIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, MainWindFileSprIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, MainWindOKIcon%, FALSE)
-PROCicon_set_shaded(MainWindow%, MainWindOwnerIcon%, filetype% = -1)
-PROCicon_set_shaded(MainWindow%, MainWindFileTypeIcon%, filetype% = -1)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileNameIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileSprIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindOKIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindOwnerIcon%, filetype% = -1)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileTypeIcon%, filetype% = -1)
 ENDPROC
 
 
@@ -98,7 +97,7 @@ REM
 REM \return		The filename in the field.
 :
 DEF FNmain_wind_get_filename
-=FNicon_get_text(MainWindow%, MainWindFileNameIcon%)
+=FNicon_get_text(MainWindHandle%, MainWindFileNameIcon%)
 
 
 REM Set the protocol message field to an error message, and enlarge the
@@ -110,15 +109,15 @@ DEF PROCmain_wind_set_proto_error(token$)
 LOCAL background%, message$
 
 message$ = FNmessage_lookup(token$)
-PROCicon_set_indirected_text(MainWindow%, MainWindProtoIcon%, message$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, message$)
 
-background% = FNicon_background_colour(MainWindow%, MainWindProtoIcon%)
-PROCicon_set_colours(MainWindow%, MainWindProtoIcon%, 11, background%)
+background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
+PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, 11, background%)
 
 REM If the window is already open, bring it to the front and enlarge it
 REM to show the protocol message field.
 
-q%!0 = MainWindow%
+q%!0 = MainWindHandle%
 SYS "Wimp_GetWindowState",, q%
 
 IF q%!32 AND (1 << 16) THEN
@@ -137,8 +136,48 @@ DEF PROCmain_wind_set_proto_message(token$)
 LOCAL background%, message$
 
 message$ = FNmessage_lookup(token$)
-PROCicon_set_indirected_text(MainWindow%, MainWindProtoIcon%, message$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, message$)
 
-background% = FNicon_background_colour(MainWindow%, MainWindProtoIcon%)
-PROCicon_set_colours(MainWindow%, MainWindProtoIcon%, 7, background%)
+background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
+PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, 7, background%)
+ENDPROC
+
+
+REM Process drags on a file save icon.
+REM
+REM \param window%	The handle of the window.
+REM \param icon%	The handle of the icon.
+:
+DEF PROCmain_wind_drag_icon(!q%, q%!4)
+LOCAL minx%, miny%, maxx%, maxy%, xoff%
+
+SYS "Wimp_GetIconState",,q%
+
+minx% = q%!8
+miny% = q%!12
+maxx% = q%!16
+maxy% = q%!20
+
+SYS "Wimp_GetWindowState",,q%
+
+xoff% = q%!4
+
+q%!0 = minx% + xoff%
+q%!4 = miny% + q%!16
+q%!8 = maxx% + xoff%
+q%!12 = maxy% + q%!16
+
+SYS "DragASprite_Start", %11000101, 1, FNtypes_sprite_from_type(ClipboardCurrentType%), q%
+ENDPROC
+
+
+REM Handle User Drag Box events, signalling the end of a drag
+REM for our file icon.
+REM On entry, b% is assumed to point to the Wimp_Poll block.
+|
+DEF PROCmain_window_drag_box
+SYS "DragASprite_Stop"
+SYS "Wimp_GetPointerInfo",,b%
+IF b%!12 = MainWindHandle% THEN ENDPROC
+PROCclipboard_start_drag_save(b%!0, b%!4, FNstring_leafname(FNmain_wind_get_filename), b%!12, b%!16)
 ENDPROC

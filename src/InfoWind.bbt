@@ -27,7 +27,7 @@ REM Load the info window template and initialise the variables.
 :
 DEF PROCinfo_wind_initialise
 PROCtemplate_load_claim("Info", b%, 1024, -1)
-SYS "Wimp_CreateWindow",,block TO InfoWindHandle%
+SYS "Wimp_CreateWindow",,b% TO InfoWindHandle%
 
 REM The icon handles.
 

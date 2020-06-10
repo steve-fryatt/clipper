@@ -70,10 +70,10 @@ SYS "Wimp_Poll", %110001, b% TO reason%
 CASE reason% OF
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
-	WHEN 6:		IF b%!8 <> 2 THEN PROCmouse_click ELSE PROCmenu
-	WHEN 7:		PROCuser_drag_box
+	WHEN 6:		IF b%!8 <> 2 THEN PROCclipper_mouse_click ELSE PROCclipper_menu
+	WHEN 7:		PROCmain_window_drag_box
 	WHEN 8:		IF b%!24=13 THEN
-				PROCsave_clipboard(FNmain_wind_get_filename, TRUE, FALSE)
+				PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
 			ELSE
 				IF b%!24 = &1B THEN
 					PROCmain_wind_close
@@ -89,129 +89,47 @@ ENDCASE
 ENDPROC
 
 
+REM Handle mouse clicks in Clipper windows.
+:
+DEF PROCclipper_mouse_click
+CASE b%!12 OF
+WHEN -2
+	PROCmain_window_toggle
+	PROCclipboard_examine
+
+WHEN MainWindHandle%
+	IF b%!16=4 THEN PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
+	IF b%!16=0 THEN PROCmain_wind_drag_icon(MainWindHandle%, 0)
+
+WHEN InfoWindHandle%
+	PROCinfo_wind_click(b%!8, b%!16)
+ENDCASE
+ENDPROC
+
+
+REM Handle menu clicks in Clipper windows.
+:
+DEF PROCclipper_menu
+IF b%!12 = -2 THEN
+	PROCmenu_create_iconbar(IconbarMenu%, b%!0)
+ELSE
+	PROCmenu_create(IconbarMenu%, b%!0, b%!4)
+ENDIF
+ENDPROC
+
+
 REM Handle incoming Wimp messages.
 REM On entry, b% is assumed to point to the Wimp_Poll block.
 :
 DEF PROCclipper_process_message
-LOCAL flags%, message$
-
 CASE b%!16 OF
-WHEN 0 : REM Message_Quit
-	Quit%=TRUE
-
-WHEN 1 : REM Message_DataSave
-	IF b%!12 = SaveRef% THEN PROCsave_ack_to(SavePath$) : ENDPROC
-
-	IF b%!12 = MyRef% OR b%!24 = InternalHandle% THEN
-		IF b%!12 <> MyRef% THEN
-			PROCmain_wind_set_proto_error("BadYourRef")
-		ELSE
-			IF b%!24 <> InternalHandle% THEN
-				PROCmain_wind_set_proto_error("BadHandle")
-			ELSE
-				PROCmain_wind_set_proto_message("FoundOwner")
-			ENDIF
-		ENDIF
-
-		Owner% = b%!4
-		ClipboardCurrentType% = b%!40
-		PROCmain_wind_set_content(FNstring_read(b%+44), FNclipboard_task_name_from_handle(b%!4), ClipboardCurrentType%)
-	ENDIF
-
-WHEN 2 : REM Message_DataSaveAck
-	IF block!12=SaveDragRef% THEN
-		REM Dragged-to app wants the file - grab it from clip owner
-		SaveDragRef% = b%!8
-
-		REM Ack the message whatever happens
-		b%!12 = SaveDragRef%
-		SYS "Wimp_SendMessage", 19, b%, b%!4
-
-		PROCsave_clipboard(FNstring_read(b%+44), FALSE, TRUE)
-
-		REM If we own the clipboard, send the ack now.
-
-		IF Owner% = ClipperTaskHandle% THEN PROCsend_save_ack
-	ELSE
-		PROCclipboard_copy_file(OurFile$, FNstring_read(b%+44))
-		Request% = b%!4
-		b%!12 = b%!8
-		b%!16 = 3
-		SYS "XOS_File", 23, OurFile$ TO Ob%,,,,Size%,,Type% ;flags%
-		IF (flags% AND %1) OR (Ob% <> 1) THEN
-			PROCmain_wind_set_proto_error("BadClipFile")
-		ELSE
-			b%!36 = Size%
-			b%!40 = Type%
-			SYS "Wimp_SendMessage", 17, b%, Request%
-		ENDIF
-	ENDIF
-
-WHEN 3 : REM Message_DataLoad
-	IF b%!12 = SaveRef% THEN
-		IF SaveDragTo% <> -1 THEN
-			SaveDragFrom% = b%!4
-			SaveFromRef% = b%!8
-
-			REM Ack the message
-
-			b%!12 = b%!8
-			SYS "Wimp_SendMessage", 19, b%, SaveDragFrom%
-
-			REM Pass message on to dest app
-
-			b%!12 = SaveDragRef%
-			SYS "Wimp_SendMessage", 18, b%, SaveDragTo%
-			SaveDragRef% = b%!8
-			PROCmain_wind_set_proto_message("AskToLoad")
-		ENDIF
-	ELSE
-		PROCclaim_clipboard
-		OurFile$ = FNstring_read(b%+44)
-		Owner% = ClipperTaskHandle%
-		ClipboardCurrentType% = b%!40
-		PROCmain_wind_set_content(OurFile$, TaskName$, ClipboardCurrentType%)
-		PROCmain_wind_set_proto_message("ItsOurs")
-	ENDIF
-
-WHEN 4 : REM Message_DataLoadAck
-	IF SaveDragTo% <> -1 THEN
-		b%!12 = SaveFromRef%
-		SYS "Wimp_SendMessage", 17, b%, SaveDragFrom%
-		SaveDragTo% = -1
-	ENDIF
-
-WHEN &F : REM Message_ClaimEntity
-	IF (b%!20 AND 4) THEN
-		IF b%!4 <> ClipperTaskHandle% THEN
-			Owner% = -1
-			PROCexamine_clipboard
-		ENDIF
-	ENDIF
-
-WHEN &10 : REM Message_DataRequest
-	IF MyRef% <> b%!8 THEN
-		IF Owner% = ClipperTaskHandle% THEN
-			PROCmain_wind_set_proto_message("SendingData")
-			Request% = b%!4
-			b%!12 = b%!8
-			SYS "Wimp_SendMessage", 19, b%
-
-			SYS "XOS_File", 23, OurFile$ TO Ob%,,,,Size%,,Type% ;flags%
-			IF (flags% AND %1) OR (Ob% <> 1) THEN
-				message$ = FNmessage_lookup("BadClipFileErr")
-				PROCwimperror_report(message$, 2, %10, "")
-			ELSE
-				b%!36 = Size%
-				b%!16 = 1
-				b%!40 = Type%
-				Leaf$ = FNstring_leafname(OurFile$)
-				$(b%+44) = Leaf$ + CHR$(0)
-				b%!0 = 44 + (LEN(Leaf$) + 4) AND &FC
-				SYS "Wimp_SendMessage", 17, b%, Request%
-			ENDIF
-		ENDIF
-	ENDIF
+	WHEN 0		: Quit%=TRUE : REM Message_Quit
+	WHEN 1		: PROCclipboard_message_data_save
+	WHEN 2		: PROCclipboard_message_data_save_ack
+	WHEN 3		: PROCclipboard_message_data_load
+	WHEN 4		: PROCclipboard_message_data_load_ack
+	WHEN &F		: PROCclipboard_message_claim_entity
+	WHEN &10	: PROCclipboard_message_data_request
 ENDCASE
 ENDPROC
 
@@ -221,28 +139,9 @@ REM On entry, b% is assumed to point to the Wimp_Poll block.
 :
 DEF PROCclipper_process_bounce
 CASE b%!16 OF
-WHEN &4E383, &4AF80 : REM Message_URIReturnResult, Message_InetSuiteOpenURL
-	PROCurl_bounce(block)
-	ENDPROC
-
-WHEN 4 : REM Message_DataLoadAck
-	PROCmain_wind_set_proto_error("RecDied")
-	SaveDragTo% = -1
-	ENDPROC
-
-OTHERWISE
-	IF b%!8 = SaveDragRef% THEN
-		PROCmain_wind_set_proto_message("NoInterest")
-		ENDPROC
-	ENDIF
-	IF b%!8 <> MyRef% THEN ENDPROC
-	IF b%!16 <> &10 THEN ENDPROC
-
-	Owner% = -1
-	ClipboardCurrentType% = -1
-
-	PROCmain_wind_set_content("None", "-", ClipboardCurrentType%)
-	PROCmain_wind_set_proto_message("NoClipboard")
+	WHEN 4			: PROCclipboard_message_data_load_ack_bounce
+	WHEN &4E383, &4AF80	: PROCurl_bounce(b%) : REM Message_URIReturnResult, Message_InetSuiteOpenURL
+	OTHERWISE		: PROCclipboard_message_bounce
 ENDPROC
 
 
@@ -250,7 +149,6 @@ REM Initialise Clipper, both internally and with the Wimp.
 :
 DEF PROCclipper_initialise
 DIM b% 1024, q% 256, a% 255
-block = b% : REM Lose this once all references to block have been expunged.
 
 REM Locate the application resources.
 
@@ -263,8 +161,6 @@ PROCmessage_initialise(Resources$ + "Messages")
 TaskName$ = FNmessage_lookup("TaskName")
 TaskSprite$ = FNmessage_lookup("TaskSpr")
 PROCwimperror_initialise(TaskName$, TaskSprite$)
-
-InternalHandle% = -&11223344
 
 DIM TASK 5
 $TASK="TASK"
@@ -286,8 +182,6 @@ b%!20 = %11000000011010
 $(b%+24) = TaskSprite$
 SYS "Wimp_CreateIcon",,b%
 
-SaveDragTo% = -1
-Owner% = -1
 OurFile$ = ""
 SaveRef% = -1
 SaveDragRef% = -1
@@ -300,178 +194,9 @@ b%!0 = InfoWindHandle%
 PROCmenu_load_templates(Resources$ + "Menus", b%)
 IconbarMenu% = b%!0
 
-REM Clipboard state data.
+REM Initialise the clipboard monitor.
 
-ClipboardCurrentType% = -1
+PROCclipboard_initialise
 
-REM Check the clipboard contents.
-
-PROCexamine_clipboard
+PROCclipboard_examine
 ENDPROC
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-DEF PROCexamine_clipboard
-IF Owner%=ClipperTaskHandle% THEN ENDPROC
-block!0=44
-block!12=0
-block!16=&10
-block!20=MainWindow%
-block!24=InternalHandle% : REM Help find protocol errors.
-block!36=4
-block!40=-1
-SYS "Wimp_SendMessage",18,block,0
-MyRef%=block!8
-PROCmain_wind_set_proto_message("SearchOwner")
-ENDPROC
-
-DEF PROCmouse_click
-CASE b%!12 OF
-WHEN -2
-	PROCmain_window_toggle
-	PROCexamine_clipboard
-
-  WHEN MainWindow%: IF block!16=4 THEN PROCsave_clipboard(FNmain_wind_get_filename,-1,0)
-                    IF block!16=0 THEN PROCdrag_icon(0)
-WHEN InfoWindHandle%
-	PROCinfo_wind_click(b%!8, b%!16)
-ENDCASE
-ENDPROC
-
-DEF PROCmenu
-IF block!12=-2 THEN
-	PROCmenu_create_iconbar(IconbarMenu%, block!0)
-ELSE
-	PROCmenu_create(IconbarMenu%, block!0, block!4)
-ENDIF
-ENDPROC
-
-DEF PROCclaim_clipboard
-bk=block+512
-!bk=24
-bk!12=0
-bk!16=&f
-bk!20=%100
-SYS "Wimp_SendMessage",18,bk,0
-ENDPROC
-
-DEF PROCsave_clipboard(S$,Check%,UseWindow%)
-LOCAL message$
-
-SavePath$=S$
-IF Check% AND INSTR(SavePath$,".")=0 THEN
-	message$ = FNmessage_lookup("DragSave")
-	PROCwimperror_report(message$, 1, %01, "")
-ENDIF
-IF Owner%=ClipperTaskHandle% THEN PROCclipboard_copy_file(OurFile$, SavePath$):ENDPROC
-block!0=44
-block!12=0
-block!16=&10 : REM Request clipboard data
-IF UseWindow% = FALSE THEN
-  block!20=-3
-  block!24=InternalHandle%
-  block!28=640
-  block!32=512
-ENDIF
-block!36=4
-block!40=-1
-SYS "Wimp_SendMessage",18,block,Owner%
-SaveRef%=block!8
-PROCmain_wind_set_proto_message("AskToSave")
-ENDPROC
-
-DEF PROCsave_ack_to(path$)
-Request%=block!4
-block!12=block!8
-block!16=2 : REM Please save file to SavePath$
-$(block+44)=path$+CHR$0
-block!0=(LEN(path$)+48) AND &FC
-SYS "Wimp_SendMessage",17,block,Request%
-SaveRef%=block!8
-ENDPROC
-
-DEF PROCdrag_icon(Icon%)
-bk=block+512
-bk!0=MainWindow%
-bk!4=Icon%
-SYS "Wimp_GetIconState",,bk
-MinX%=bk!8
-MinY%=bk!12
-MaxX%=bk!16
-MaxY%=bk!20
-SYS "Wimp_GetWindowState",,bk
-Xoff%=bk!4
-bk!0=MinX%+Xoff%
-bk!4=MinY%+bk!16
-bk!8=MaxX%+Xoff%
-bk!12=MaxY%+bk!16
-SYS "DragASprite_Start",%11000101,1,FNtypes_sprite_from_type(ClipboardCurrentType%),bk
-ENDPROC
-
-DEF PROCuser_drag_box
-SYS "DragASprite_Stop"
-SYS "Wimp_GetPointerInfo",,block
-IF block!12=MainWindow% THEN ENDPROC
-DestWin%=block!12
-DestIcon%=block!16
-Name$=FNstring_leafname(FNmain_wind_get_filename)
-block!28=block!0
-block!32=block!4
-block!0=(48+LEN(Name$)) AND &FC
-block!12=0
-block!16=1 : REM Ask dest app if it wants the file
-block!20=DestWin%
-block!24=DestIcon%
-block!36=0
-block!40=ClipboardCurrentType%
-$(block+44)=Name$+CHR$0
-SYS "Wimp_SendMessage",18,block,DestWin%,DestIcon% TO ,,SaveDragTo%
-SaveDragRef%=block!8
-PROCmain_wind_set_proto_message("OfferData")
-ENDPROC
-
-DEF PROCsend_save_ack
-block!12=SaveDragRef%
-block!16=3 : REM File can now be loaded
-SYS "Wimp_SendMessage",17,block,SaveDragTo%
-SaveDragTo%=-1
-ENDPROC
-
-
-REM Copy a file on disc, reporting any error via Wimp_ReportError.
-REM
-REM \param source$	The source file to be copied.
-REM \param destination$	The destination of the copy operation.
-:
-DEF PROCclipboard_copy_file(source$, destination$)
-LOCAL error%, flags%
-
-SYS "XOS_FSControl", 26, source$, destination$, %10 TO error% ;flags%
-IF flags% AND 1 THEN SYS "Wimp_ReportError", error%, &501, TaskName$, TaskSprite$, 1, 0
-ENDPROC
-
-
-REM Given a task handle, get the task name. Returns "???" if the
-REM handle can not be resolved.
-REM
-REM \param handle%	The task handle to look up.
-REM \return		The corresponding task name.
-:
-DEF FNclipboard_task_name_from_handle(handle%)
-LOCAL name%, flags%
-
-SYS "XTaskManager_TaskNameFromHandle",handle% TO name% ;flags%
-IF flags% AND 1 THEN ="???"
-=FNstring_read(name%)
