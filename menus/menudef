@@ -1,6 +1,6 @@
 /* Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
  *
- * This file is part of Clipboard:
+ * This file is part of Clipper:
  *
  *   http://www.stevefryatt.org.uk/software/
  *
@@ -25,7 +25,7 @@
  * Iconbar Menu
  */
 
-menu(icon_bar_menu, "Clipboard") {
+menu(icon_bar_menu, "Clipper") {
 	item("Info") {
 		d_box(info_window);
 	}

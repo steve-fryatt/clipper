@@ -1,4 +1,4 @@
-REM >Prog:!Clipboard.!RunImage
+REM >Prog:!Clipper.!RunImage
 REM
 REM Version 0.12 - Email, Web and Help links added to iconbar menu & info window - SF.
 
@@ -23,12 +23,12 @@ b% = block : q% = scrap
 
 REM Configure the basic error handling for initialisation.
 
-PROCwimperror_initialise("Clipboard", "!clipboard")
+PROCwimperror_initialise("Clipper", "!clipper")
 ON ERROR result% = FNwimperror_program : END
 
 REM Locate the application resources.
 
-Resources$ = FNresources_find_territory_folder("<Clipboard$Dir>.Resources")
+Resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
 
 REM Load the messages file.
 
@@ -98,7 +98,7 @@ WHILE NOT Quit%
 					SYS "Wimp_ProcessKey", block!24
 				ENDIF
 			ENDIF
-	WHEN 9 :	IF block!0=1 THEN OSCLI("Filer_Run <Clipboard$Dir>.!Help")
+	WHEN 9 :	IF block!0=1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
 			IF block!0=2 THEN Quit%=TRUE
 	WHEN 17,18 :	PROCclipper_process_message
 	WHEN 19 :	PROCclipper_process_bounce

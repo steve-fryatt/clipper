@@ -1,6 +1,6 @@
 # Copyright 2014-2020, Stephen Fryatt (info@stevefryatt.org.uk)
 #
-# This file is part of Clipboard:
+# This file is part of Clipper:
 #
 #   http://www.stevefryatt.org.uk/software/
 #
@@ -24,11 +24,11 @@
 # It is intended for native compilation on Linux (for use in a GCCSDK
 # environment) or cross-compilation under the GCCSDK.
 
-ARCHIVE := clipboard
+ARCHIVE := clipper
 
-APP := !Clipboard
+APP := !Clipper
 
-SRCS := Clipboard.bbt	\
+SRCS := Clipper.bbt	\
 	InfoWind.bbt	\
 	MainWind.bbt	\
 	Types.bbt

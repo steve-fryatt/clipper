@@ -1,6 +1,6 @@
 # Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
 #
-# This file is part of Clipboard:
+# This file is part of Clipper:
 #
 #   http://www.stevefryatt.org.uk/software/
 #
@@ -20,9 +20,9 @@
 # See the Licence for the specific language governing
 # permissions and limitations under the Licence.
 
-TaskName:Clipboard
+TaskName:Clipper
 
-TaskSpr:!clipboard
+TaskSpr:!Clipper
 
 SupportURL:http://www.stevefryatt.org.uk/software/clipboard/
 
@@ -48,11 +48,11 @@ OfferData:Offering data
 
 # Interactive Help Messages
 
-Help.IconBar:\TClipboard application.|MIt allows the global clipboard to be examined, edited and saved.|M\Sopen the clipboard viewer.
+Help.IconBar:\TClipper application.|MIt allows the global clipboard to be examined, edited and saved.|M\Sopen the clipboard viewer.
 
-Help.Info:\Tprogram information \w for the Clipboard application.
-Help.Info.Website:\Tprogram information \w for the Clipboard application.|M\Svisit its website for information and updates.
+Help.Info:\Tprogram information \w for the Clipper application.
+Help.Info.Website:\Tprogram information \w for the Clipper application.|M\Svisit its website for information and updates.
 
-Help.IconBarMenu.00:\Rto see information about Clipboard and visit its website.
-Help.IconBarMenu.01:\Sread the Clipboard documentation.
-Help.IconBarMenu.03:\Squit Clipboard.
+Help.IconBarMenu.00:\Rto see information about Clipper and visit its website.
+Help.IconBarMenu.01:\Sread the Clipper documentation.
+Help.IconBarMenu.03:\Squit Clipper.

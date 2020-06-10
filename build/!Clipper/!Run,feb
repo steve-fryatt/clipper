@@ -1,0 +1,8 @@
+WimpSlot -min 40k -max 40k
+
+Set Clipper$Dir <Obey$Dir>
+
+IconSprites <Clipper$Dir>.!Sprites
+
+WimpSlot -min 40k -max 40k
+<Clipper$Dir>.!RunImage
