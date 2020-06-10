@@ -30,6 +30,7 @@ APP := !Clipper
 
 SRCS := Clipper.bbt	\
 	Clipboard.bbt	\
+	IHelp.bbt	\
 	InfoWind.bbt	\
 	MainWind.bbt	\
 	Types.bbt

@@ -95,7 +95,7 @@ PROCicon_set_indirected_text(MainWindHandle%, MainWindFileTypeIcon%, FNtypes_nam
 
 sprite$ = FNtypes_sprite_from_type(filetype%)
 validation% = FNicon_validation(MainWindHandle%, MainWindFileSprIcon%)
-IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2"
+IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2;NIcon"
 
 SYS "Wimp_GetCaretPosition",,q%
 IF q%!0 = MainWindHandle% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)

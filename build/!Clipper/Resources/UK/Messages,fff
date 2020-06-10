@@ -50,9 +50,18 @@ OfferData:Offering data
 
 Help.IconBar:\TClipper application.|MIt allows the global clipboard to be examined, edited and saved.|M\Sopen the clipboard viewer.
 
-Help.Info:\Tprogram information \w for the Clipper application.
-Help.Info.Website:\Tprogram information \w for the Clipper application.|M\Svisit its website for information and updates.
+Help.Info:\Wthe program information \w for the Clipper application.
+Help.Info.Email:\Wthe program information \w for the Clipper application.|M\Ssend an email to its maintainer.
+Help.Info.Website:\Wthe program information \w for the Clipper application.|M\Svisit its website for information and updates.
+
+Help.Main:\Wthe Clipper \w.|MIt allows the global clipboard to be examined, edited and saved.|MDrag a file here to place its contents on the clipboard.
+Help.Main.Icon:\Tfile currently held on the global clipboard.|M\Dsave it to disc or import it into another application.
+Help.Main.Type:\Ttype of the data currently held on the global clipboard.
+Help.Main.Filename:\Tfilename of the data currently held on the global clipboard.|MChange the name if you wish to save the data to disc.
+Help.Main.OK:\Ssave the clipboard contents to the location shown in the field on the left.
+Help.Main.Owner:\Tname of the application which currently owns the global clipboard.
+Help.Main.Protocol:This field contains details of the how the global clipboard is operating.
 
 Help.IconBarMenu.00:\Rto see information about Clipper and visit its website.
 Help.IconBarMenu.01:\Sread the Clipper documentation.
-Help.IconBarMenu.03:\Squit Clipper.
+Help.IconBarMenu.02:\Squit Clipper.

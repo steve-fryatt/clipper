@@ -33,6 +33,7 @@ LIBRARY "BASIC:WimpError"
 LIBRARY "BASIC:Window"
 
 LIBRARY "src/Clipboard.bbt"
+LIBRARY "src/IHelp.bbt"
 LIBRARY "src/InfoWind.bbt"
 LIBRARY "src/MainWind.bbt"
 LIBRARY "src/Types.bbt"
@@ -56,7 +57,7 @@ WHILE NOT Quit%
 	PROCclipper_poll
 ENDWHILE
 
-IF ClipperTaskHandle% <> -1 THEN SYS "Wimp_CloseDown", ClipperTaskHandle%, !TASK
+IF ClipperTaskHandle% <> -1 THEN SYS "Wimp_CloseDown", ClipperTaskHandle%, &4B534154
 END
 
 
@@ -129,6 +130,7 @@ CASE b%!16 OF
 	WHEN 4		: PROCclipboard_message_data_load_ack
 	WHEN &F		: PROCclipboard_message_claim_entity
 	WHEN &10	: PROCclipboard_message_data_request
+	WHEN &502	: PROCihelp_send(b%)
 ENDCASE
 ENDPROC
 
@@ -161,9 +163,20 @@ TaskName$ = FNmessage_lookup("TaskName")
 TaskSprite$ = FNmessage_lookup("TaskSpr")
 PROCwimperror_initialise(TaskName$, TaskSprite$)
 
-DIM TASK 5
-$TASK="TASK"
-SYS "Wimp_Initialise", 200, !TASK, TaskName$ TO ,ClipperTaskHandle%
+REM Initialise with the Wimp.
+
+q%!0 = 1
+q%!4 = 2
+q%!8 = 3
+q%!12 = 4
+q%!16 = &F
+q%!20 = &10
+q%!24 = &502
+q%!28 = &4E383
+q%!32 = &4AF80
+q%!36 = 0
+
+SYS "Wimp_Initialise", 310, &4B534154, TaskName$, q% TO ,ClipperTaskHandle%
 
 PROCtemplate_open(Resources$ + "Templates")
 PROCinfo_wind_initialise
