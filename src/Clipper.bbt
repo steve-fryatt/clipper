@@ -71,7 +71,7 @@ SYS "Wimp_Poll", %110001, b% TO reason%
 CASE reason% OF
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
-	WHEN 6:		IF b%!8 <> 2 THEN PROCclipper_mouse_click ELSE PROCclipper_menu
+	WHEN 6:		IF b%!8 <> 2 THEN PROCclipper_mouse_click(b%) ELSE PROCclipper_menu(b%)
 	WHEN 7:		PROCmain_window_drag_box
 	WHEN 8:		IF b%!24=13 THEN
 				PROCclipboard_save_data(FNmain_wind_get_filename, TRUE, FALSE)
@@ -84,65 +84,71 @@ CASE reason% OF
 			ENDIF
 	WHEN 9 :	IF b%!0 = 1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
 			IF b%!0 = 2 THEN Quit%=TRUE
-	WHEN 17,18 :	PROCclipper_process_message
-	WHEN 19 :	PROCclipper_process_bounce
+	WHEN 17,18 :	PROCclipper_process_message(b%)
+	WHEN 19 :	PROCclipper_process_bounce(b%)
 ENDCASE
 ENDPROC
 
 
 REM Handle mouse clicks in Clipper windows.
+REM
+REM \param pointer%	Pointer to the Wimp_Poll block.
 :
-DEF PROCclipper_mouse_click
-CASE b%!12 OF
+DEF PROCclipper_mouse_click(pointer%)
+CASE pointer%!12 OF
 WHEN -2
 	PROCmain_window_toggle
 	PROCclipboard_examine
 
 WHEN MainWindHandle%
-	PROCmain_wind_click(b%!8, b%!16)
+	PROCmain_wind_click(pointer%!8, pointer%!16)
 
 WHEN InfoWindHandle%
-	PROCinfo_wind_click(b%!8, b%!16)
+	PROCinfo_wind_click(pointer%!8, pointer%!16)
 ENDCASE
 ENDPROC
 
 
 REM Handle menu clicks in Clipper windows.
+REM
+REM \param pointer%	Pointer to the Wimp_Poll block.
 :
-DEF PROCclipper_menu
-IF b%!12 = -2 THEN
-	PROCmenu_create_iconbar(IconbarMenu%, b%!0)
+DEF PROCclipper_menu(pointer%)
+IF pointer%!12 = -2 THEN
+	PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
 ELSE
-	PROCmenu_create(IconbarMenu%, b%!0, b%!4)
+	PROCmenu_create(IconbarMenu%, pointer%!0, pointer%!4)
 ENDIF
 ENDPROC
 
 
 REM Handle incoming Wimp messages.
-REM On entry, b% is assumed to point to the Wimp_Poll block.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
 :
-DEF PROCclipper_process_message
+DEF PROCclipper_process_message(message%)
 CASE b%!16 OF
-	WHEN 0		: Quit%=TRUE : REM Message_Quit
-	WHEN 1		: PROCclipboard_message_data_save
-	WHEN 2		: PROCclipboard_message_data_save_ack
-	WHEN 3		: PROCclipboard_message_data_load
-	WHEN 4		: PROCclipboard_message_data_load_ack
-	WHEN &F		: PROCclipboard_message_claim_entity
-	WHEN &10	: PROCclipboard_message_data_request
-	WHEN &502	: PROCihelp_send(b%)
+	WHEN 0		: Quit% = TRUE : REM Message_Quit
+	WHEN 1		: PROCclipboard_message_data_save(message%)
+	WHEN 2		: PROCclipboard_message_data_save_ack(message%)
+	WHEN 3		: PROCclipboard_message_data_load(message%)
+	WHEN 4		: PROCclipboard_message_data_load_ack(message%)
+	WHEN &F		: PROCclipboard_message_claim_entity(message%)
+	WHEN &10	: PROCclipboard_message_data_request(message%)
+	WHEN &502	: PROCihelp_send(message%)
 ENDCASE
 ENDPROC
 
 
 REM Handle boinced Wimp messages.
-REM On entry, b% is assumed to point to the Wimp_Poll block.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
 :
-DEF PROCclipper_process_bounce
+DEF PROCclipper_process_bounce(message%)
 CASE b%!16 OF
-	WHEN 4			: PROCclipboard_message_data_load_ack_bounce
-	WHEN &4E383, &4AF80	: PROCurl_bounce(b%) : REM Message_URIReturnResult, Message_InetSuiteOpenURL
-	OTHERWISE		: PROCclipboard_message_bounce
+	WHEN 4			: PROCclipboard_message_data_load_ack_bounce(message%)
+	WHEN &4E383, &4AF80	: PROCurl_bounce(message%) : REM Message_URIReturnResult, Message_InetSuiteOpenURL
+	OTHERWISE		: PROCclipboard_message_bounce(message%)
 ENDPROC
 
 
