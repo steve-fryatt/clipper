@@ -200,10 +200,6 @@ b%!20 = %11000000011010
 $(b%+24) = TaskSprite$
 SYS "Wimp_CreateIcon",,b%
 
-OurFile$ = ""
-SaveRef% = -1
-SaveDragRef% = -1
-
 REM Initialise and load the menu templates
 
 PROCmenu_initialise

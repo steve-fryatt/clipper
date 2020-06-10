@@ -42,6 +42,9 @@ ClipboardLastMyRef% = -1
 REM The handle of the task to which we're saving the clipboard.
 ClipboardSaveDestinationTask% = -1
 
+REM The path on which we're saving the clipboard data.
+ClipboardSavePath$ = ""
+
 ENDPROC
 
 
@@ -128,8 +131,8 @@ WHEN SaveRef%
 	sender_handle% = message%!4
 	message%!12 = message%!8
 	message%!16 = 2 : REM Message_DataSaveAck
-	$(message% + 44) = SavePath$ + CHR$(0)
-	message%!0 = (LEN(SavePath$) + 48) AND &FC
+	$(message% + 44) = ClipboardSavePath$ + CHR$(0)
+	message%!0 = (LEN(ClipboardSavePath$) + 48) AND &FC
 	SYS "Wimp_SendMessage", 17, message%, sender_handle%
 	SaveRef% = message%!8
 
@@ -318,12 +321,12 @@ ENDPROC
 DEF PROCclipboard_save_data(S$,Check%,UseWindow%)
 LOCAL message$
 
-SavePath$=S$
-IF Check% AND INSTR(SavePath$,".")=0 THEN
+ClipboardSavePath$=S$
+IF Check% AND INSTR(ClipboardSavePath$,".")=0 THEN
 	message$ = FNmessage_lookup("DragSave")
 	PROCwimperror_report(message$, 1, %01, "")
 ENDIF
-IF ClipboardCurrentOwnerTask%=ClipperTaskHandle% THEN PROCclipboard_copy_file(OurFile$, SavePath$):ENDPROC
+IF ClipboardCurrentOwnerTask%=ClipperTaskHandle% THEN PROCclipboard_copy_file(OurFile$, ClipboardSavePath$):ENDPROC
 b%!0=44
 b%!12=0
 b%!16=&10 : REM Request clipboard data
