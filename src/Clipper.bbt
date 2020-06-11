@@ -67,15 +67,14 @@ DEF PROCclipper_poll
 LOCAL reason%
 
 SYS "Wimp_Poll", %110001, b% TO reason%
-*ReportTrace
+
 CASE reason% OF
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
-	WHEN 6:		IF b%!8 <> 2 THEN PROCclipper_mouse_click(b%) ELSE PROCclipper_menu(b%)
+	WHEN 6:		PROCclipper_mouse_click(b%)
 	WHEN 7:		PROCmain_window_drag_box
 	WHEN 8:		PROCclipper_keypress(b%)
-	WHEN 9 :	IF b%!0 = 1 THEN OSCLI("Filer_Run <Clipper$Dir>.!Help")
-			IF b%!0 = 2 THEN Quit%=TRUE
+	WHEN 9 :	PROCclipper_menu_selection(b%)
 	WHEN 17,18 :	PROCclipper_process_message(b%)
 	WHEN 19 :	PROCclipper_process_bounce(b%)
 ENDCASE
@@ -89,11 +88,19 @@ REM \param pointer%	Pointer to the Wimp_Poll block.
 DEF PROCclipper_mouse_click(pointer%)
 CASE pointer%!12 OF
 WHEN -2
-	PROCmain_window_toggle
-	PROCclipboard_examine
+	IF pointer%!8 = 2 THEN
+		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
+	ELSE
+		PROCmain_window_toggle
+		PROCclipboard_examine
+	ENDIF
 
 WHEN MainWindHandle%
-	PROCmain_wind_click(pointer%!8, pointer%!16)
+	IF pointer%!8 = 2 THEN
+		PROCmenu_create(IconbarMenu%, pointer%!0, pointer%!4)
+	ELSE
+		PROCmain_wind_click(pointer%!8, pointer%!16)
+	ENDIF
 
 WHEN InfoWindHandle%
 	PROCinfo_wind_click(pointer%!8, pointer%!16)
@@ -115,16 +122,17 @@ ENDCASE
 ENDPROC
 
 
-REM Handle menu clicks in Clipper windows.
+REM Handle selections from the iconbar menu.
 REM
-REM \param pointer%	Pointer to the Wimp_Poll block.
+REM \param selection%	Pointer to the menu selection block.
 :
-DEF PROCclipper_menu(pointer%)
-IF pointer%!12 = -2 THEN
-	PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
-ELSE
-	PROCmenu_create(IconbarMenu%, pointer%!0, pointer%!4)
-ENDIF
+DEF PROCclipper_menu_selection(selection%)
+IF FNmenu_current_handle <> IconbarMenu% THEN ENDPROC
+
+CASE selection%!0 OF
+	WHEN 1		: OSCLI("Filer_Run <Clipper$Dir>.!Help")
+	WHEN 2		: Quit% = TRUE
+ENDCASE
 ENDPROC
 
 
