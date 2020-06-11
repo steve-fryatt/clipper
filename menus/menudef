@@ -29,6 +29,6 @@ menu(icon_bar_menu, "Clipper") {
 	item("Info") {
 		d_box(info_window);
 	}
-	item("Help");
+	item("Help...");
 	item("Quit");
 }
