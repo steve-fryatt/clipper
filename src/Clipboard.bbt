@@ -45,13 +45,14 @@ ClipboardSaveDestinationTask% = -1
 REM The path on which we're saving the clipboard data.
 ClipboardSavePath$ = ""
 
-REM The MyRef of the last datavase message that we've sent.
+REM The MyRef of the last datasave message that we've sent.
 ClipboardSaveDragMyRef% = -1
 
+REM The file holding the clipboard data if we own it.
+ClipboardCurrentFile$ = ""
 
-OurFile$ = ""
-SaveRef% = -1
-
+REM The MyRef of the last datasave message that we've sent.
+ClipboardSaveMyRef% = -1
 ENDPROC
 
 
@@ -104,7 +105,7 @@ SYS "Wimp_SendMessage", 19, message%
 
 REM Get the details of our clipboard file.
 
-SYS "XOS_File", 23, OurFile$ TO object%,,,,size%,,type% ;flags%
+SYS "XOS_File", 23, ClipboardCurrentFile$ TO object%,,,,size%,,type% ;flags%
 
 IF (flags% AND %1) OR (object% <> 1) THEN
 	message$ = FNmessage_lookup("BadClipFileErr")
@@ -117,7 +118,7 @@ REM Send a Message_DataSave back as a response.
 message%!36 = size%
 message%!16 = 1	: REM Message_DataSave
 message%!40 = type%
-leaf$ = FNstring_leafname(OurFile$)
+leaf$ = FNstring_leafname(ClipboardCurrentFile$)
 $(message% + 44) = leaf$ + CHR$(0)
 message%!0 = 44 + (LEN(leaf$) + 4) AND &FC
 SYS "Wimp_SendMessage", 17, message%, sender_handle%
@@ -134,14 +135,14 @@ DEF PROCclipboard_message_data_save(message%)
 LOCAL sender_handle%
 
 CASE message%!12 OF
-WHEN SaveRef%
+WHEN ClipboardSaveMyRef%
 	sender_handle% = message%!4
 	message%!12 = message%!8
 	message%!16 = 2 : REM Message_DataSaveAck
 	$(message% + 44) = ClipboardSavePath$ + CHR$(0)
 	message%!0 = (LEN(ClipboardSavePath$) + 48) AND &FC
 	SYS "Wimp_SendMessage", 17, message%, sender_handle%
-	SaveRef% = message%!8
+	ClipboardSaveMyRef% = message%!8
 
 WHEN ClipboardLastMyRef%
 	IF message%!24 <> ClipboardInternalHandle% THEN
@@ -194,11 +195,11 @@ IF message%!12 = ClipboardSaveDragMyRef% THEN
 		ClipboardSaveDestinationTask% = -1
 	ENDIF
 ELSE
-	PROCclipboard_copy_file(OurFile$, FNstring_read(message% + 44))
+	PROCclipboard_copy_file(ClipboardCurrentFile$, FNstring_read(message% + 44))
 	sender_handle% = message%!4
 	message%!12 = message%!8
 	message%!16 = 3 : REM Message_DataLoad
-	SYS "XOS_File", 23, OurFile$ TO object%,,,,size%,,type% ;flags%
+	SYS "XOS_File", 23, ClipboardCurrentFile$ TO object%,,,,size%,,type% ;flags%
 	IF (flags% AND %1) OR (object% <> 1) THEN
 		PROCmain_wind_set_proto_error("BadClipFile")
 	ELSE
@@ -211,7 +212,7 @@ ENDPROC
 
 
 DEF PROCclipboard_message_data_load(message%)
-IF message%!12 = SaveRef% THEN
+IF message%!12 = ClipboardSaveMyRef% THEN
 	IF ClipboardSaveDestinationTask% <> -1 THEN
 		SaveDragFrom% = message%!4
 		SaveFromRef% = message%!8
@@ -232,10 +233,10 @@ ELSE
 	REM We've taken ownership of the clipboard
 
 	PROCclipboard_claim
-	OurFile$ = FNstring_read(message% + 44)
+	ClipboardCurrentFile$ = FNstring_read(message% + 44)
 	ClipboardCurrentOwnerTask% = ClipperTaskHandle%
 	ClipboardCurrentType% = message%!40
-	PROCmain_wind_set_content(OurFile$, TaskName$, ClipboardCurrentType%)
+	PROCmain_wind_set_content(ClipboardCurrentFile$, TaskName$, ClipboardCurrentType%)
 	PROCmain_wind_set_proto_message("ItsOurs")
 ENDIF
 ENDPROC
@@ -364,7 +365,7 @@ ENDIF
 REM If we own the clipboard, we can just copy our file to the destination.
 
 IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN
-	PROCclipboard_copy_file(OurFile$, ClipboardSavePath$)
+	PROCclipboard_copy_file(ClipboardCurrentFile$, ClipboardSavePath$)
 	ENDPROC
 ENDIF
 
@@ -383,7 +384,7 @@ ENDIF
 message%!36 = 4
 message%!40 = -1
 SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask%
-SaveRef% = message%!8
+ClipboardSaveMyRef% = message%!8
 PROCmain_wind_set_proto_message("AskToSave")
 ENDPROC
 
