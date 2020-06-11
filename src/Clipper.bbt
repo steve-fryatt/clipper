@@ -169,15 +169,17 @@ ENDPROC
 REM Initialise Clipper, both internally and with the Wimp.
 :
 DEF PROCclipper_initialise
+LOCAL resources$
+
 DIM b% 1024, q% 256, a% 255
 
 REM Locate the application resources.
 
-Resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
+resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
 
 REM Load the messages file.
 
-PROCmessage_initialise(Resources$ + "Messages")
+PROCmessage_initialise(resources$ + "Messages")
 
 TaskName$ = FNmessage_lookup("TaskName")
 TaskSprite$ = FNmessage_lookup("TaskSpr")
@@ -198,7 +200,7 @@ q%!36 = 0
 
 SYS "Wimp_Initialise", 310, &4B534154, TaskName$, q% TO ,ClipperTaskHandle%
 
-PROCtemplate_open(Resources$ + "Templates")
+PROCtemplate_open(resources$ + "Templates")
 PROCinfo_wind_initialise
 PROCmain_wind_initialise
 PROCtemplate_close
@@ -219,12 +221,11 @@ REM Initialise and load the menu templates
 PROCmenu_initialise
 
 b%!0 = InfoWindHandle%
-PROCmenu_load_templates(Resources$ + "Menus", b%)
+PROCmenu_load_templates(resources$ + "Menus", b%)
 IconbarMenu% = b%!0
 
 REM Initialise the clipboard monitor.
 
 PROCclipboard_initialise
-
 PROCclipboard_examine
 ENDPROC
