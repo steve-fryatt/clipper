@@ -203,7 +203,7 @@ ENDPROC
 
 REM Handle User Drag Box events, signalling the end of a drag
 REM for our file icon.
-|
+:
 DEF PROCmain_window_drag_box
 SYS "DragASprite_Stop"
 SYS "Wimp_GetPointerInfo",,b%
