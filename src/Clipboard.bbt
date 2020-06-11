@@ -171,12 +171,17 @@ DEF PROCclipboard_message_data_save_ack(message%)
 LOCAL flags%, sender_handle%, object%, size%, type%
 
 IF message%!12 = ClipboardSaveDragMyRef% THEN
-	REM Dragged-to app wants the file - grab it from clip owner
+	REM We're saving the clipboard to another app, started in
+	REM PROCclipboard_start_drag_save. Update the MyRef value.
+
 	ClipboardSaveDragMyRef% = message%!8
 
 	REM Ack the message whatever happens
+
 	message%!12 = ClipboardSaveDragMyRef%				: REM Should we do this??
 	SYS "Wimp_SendMessage", 19, message%, message%!4	: REM Is it required??
+
+	REM Start the actual save process.
 
 	PROCclipboard_save_data(FNstring_read(message% + 44), message%, TRUE)
 
