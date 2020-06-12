@@ -32,6 +32,7 @@ DragSave:To save, drag the file icon to a directory viewer.
 
 # Protocol Messages
 
+
 SearchOwner:Looking for owner...
 ItsOurs:I own it
 BadHandle:Bad DataSave handle from %0
@@ -42,10 +43,11 @@ RecdAck:Received ack...
 AskToLoad:Asking %0 to load data...
 AskToSave:Asking %0 to save data...
 AskedToLoad:Asked to load data...
+NoSaveIn:I don't support direct saves in!
+BadYourRef:Bad YourRef in %0 message
 
 
 BadClipFile:Bad clipboard file
-BadYourRef:Bad yourref in DataSave message
 RecDied:Receiver died!
 SendingData:Sending data myself
 NoInterest:App not interested

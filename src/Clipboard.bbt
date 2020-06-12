@@ -201,7 +201,7 @@ WHEN 0
 	ClipboardRequestMyRef% = message%!8
 
 OTHERWISE
-	*Report \R Unexpected YourRef in Message_DataRequest
+	PROCmain_wind_set_proto_error("BadYourRef", "DataRequest")
 ENDCASE
 ENDPROC
 
@@ -249,14 +249,15 @@ WHEN 0
 	REM YourRef 0 would be another application saving to us; we don't
 	REM support this.
 
+	PROCmain_wind_reset_proto
+	PROCmain_wind_set_proto_message("NoSaveIn")
+
 OTHERWISE
-	*Report \R Unexpected YourRef in Message_DataSave
+	PROCmain_wind_set_proto_error("BadYourRef", "DataSave")
 
 	REM Not sure if we need this? Was it just for debugging IcnClipBrd?
 
 	IF message%!24 = ClipboardInternalHandle% THEN
-		PROCmain_wind_set_proto_error("BadYourRef")
-
 		ClipboardCurrentOwnerTask% = message%!4
 		ClipboardCurrentType% = message%!40
 		PROCmain_wind_set_content(FNstring_read(message%+44), FNclipboard_task_name_from_handle(message%!4), ClipboardCurrentType%)
@@ -318,7 +319,7 @@ WHEN ClipboardRequestMyRef%
 	ENDIF
 
 OTHERWISE
-	*Report \R Unexpected YourRef in Message_DataSave
+	PROCmain_wind_set_proto_error("BadYourRef", "DataSaveAck")
 ENDCASE
 ENDPROC
 
@@ -384,7 +385,7 @@ WHEN 0
 	PROCmain_wind_set_proto_message("ItsOurs")
 
 OTHERWISE
-	*Report \R Unexpected YourRef in Message_DataLoad
+	PROCmain_wind_set_proto_error("BadYourRef", "DataLoad")
 ENDCASE
 ENDPROC
 
@@ -410,7 +411,7 @@ WHEN ClipboardRequestMyRef%
 	ClipboardRequestMyRef% = -1
 
 OTHERWISE
-	*Report \R Unexpected YourRef in Message_DataLoadAck
+	PROCmain_wind_set_proto_error("BadYourRef", "DataLoadAck")
 ENDCASE
 ENDPROC
 
