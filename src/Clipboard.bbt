@@ -142,7 +142,7 @@ REM Clipboard Drag Save Step 1 - Send Message_DataSave
 ClipboardDragSaveMyRef% = b%!8
 
 PROCmain_wind_reset_proto
-PROCmain_wind_set_proto_param_message("OfferData", FNclipboard_task_name_from_handle(ClipboardSaveDestinationTask%))
+PROCmain_wind_set_proto_handle_message("OfferData", ClipboardSaveDestinationTask%)
 ENDPROC
 
 
@@ -214,7 +214,7 @@ REM
 REM \param message%	Pointer to the Wimp_Poll block.
 :
 DEF PROCclipboard_message_data_save(message%)
-LOCAL sender_handle%, task$
+LOCAL sender_handle%
 
 CASE message%!12 OF
 WHEN ClipboardSaveMyRef%
@@ -230,19 +230,17 @@ WHEN ClipboardExamineMyRef%
 	REM A response to a Message_DataRequest sent by PROCclipboard_examine
 	REM to identify the current owner of the clipboard.
 
-	task$ = FNclipboard_task_name_from_handle(message%!4)
-
 	IF message%!24 <> ClipboardInternalHandle% THEN
-		PROCmain_wind_set_proto_param_error("BadHandle", task$)
+		PROCmain_wind_set_proto_handle_error("BadHandle", message%!4)
 	ELSE
-		PROCmain_wind_set_proto_param_message("FoundOwner", task$)
+		PROCmain_wind_set_proto_handle_message("FoundOwner", message%!4)
 	ENDIF
 
 	REM Record the details of the current clipboard owner.
 
 	ClipboardCurrentOwnerTask% = message%!4
 	ClipboardCurrentType% = message%!40
-	PROCmain_wind_set_content(FNstring_read(message%+44), task$, ClipboardCurrentType%)
+	PROCmain_wind_set_content(FNstring_read(message%+44), message%!4, ClipboardCurrentType%)
 
 	ClipboardExamineMyRef% = -1
 
@@ -261,7 +259,7 @@ OTHERWISE
 	IF message%!24 = ClipboardInternalHandle% THEN
 		ClipboardCurrentOwnerTask% = message%!4
 		ClipboardCurrentType% = message%!40
-		PROCmain_wind_set_content(FNstring_read(message%+44), FNclipboard_task_name_from_handle(message%!4), ClipboardCurrentType%)
+		PROCmain_wind_set_content(FNstring_read(message%+44), message%!4, ClipboardCurrentType%)
 	ENDIF
 ENDCASE
 ENDPROC
@@ -318,7 +316,7 @@ WHEN ClipboardRequestMyRef%
 		SYS "Wimp_SendMessage", 17, message%, sender_handle% TO ,,receiver_handle%
 
 		ClipboardRequestMyRef% = message%!8
-		PROCmain_wind_set_proto_param_message("OfferData", FNclipboard_task_name_from_handle(receiver_handle%))
+		PROCmain_wind_set_proto_handle_message("OfferData", receiver_handle%)
 	ENDIF
 
 OTHERWISE
@@ -353,7 +351,7 @@ WHEN ClipboardSaveMyRef%
 		REM Clipboard Drag Save Step 3
 
 		ClipboardDragSaveMyRef% = message%!8
-		PROCmain_wind_set_proto_param_message("AskToLoad", FNclipboard_task_name_from_handle(ClipboardSaveDestinationTask%))
+		PROCmain_wind_set_proto_handle_message("AskToLoad", ClipboardSaveDestinationTask%)
 	ENDIF
 
 WHEN 0
@@ -384,7 +382,7 @@ WHEN 0
 
 	REM Update the display.
 
-	PROCmain_wind_set_content(ClipboardCurrentFile$, TaskName$, ClipboardCurrentType%)
+	PROCmain_wind_set_content(ClipboardCurrentFile$, ClipperTaskHandle%, ClipboardCurrentType%)
 	PROCmain_wind_set_proto_message("ItsOurs")
 
 OTHERWISE
@@ -457,7 +455,7 @@ WHEN ClipboardExamineMyRef%
 		ClipboardCurrentOwnerTask% = -1
 		ClipboardCurrentType% = -1
 
-		PROCmain_wind_set_content("None", "-", ClipboardCurrentType%)
+		PROCmain_wind_set_content("None", -1, ClipboardCurrentType%)
 		PROCmain_wind_set_proto_message("NoClipboard")
 	ENDIF
 
@@ -514,7 +512,7 @@ message%!36 = 4
 message%!40 = -1
 SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask% TO ,,receiver_handle%
 ClipboardSaveMyRef% = message%!8
-PROCmain_wind_set_proto_param_message("AskToSave", FNclipboard_task_name_from_handle(receiver_handle%))
+PROCmain_wind_set_proto_handle_message("AskToSave", receiver_handle%)
 ENDPROC
 
 
@@ -529,17 +527,3 @@ LOCAL error%, flags%
 SYS "XOS_FSControl", 26, source$, destination$, %10 TO error% ;flags%
 IF flags% AND 1 THEN SYS "Wimp_ReportError", error%, &501, TaskName$, TaskSprite$, 1, 0
 ENDPROC
-
-
-REM Given a task handle, get the task name. Returns "???" if the
-REM handle can not be resolved.
-REM
-REM \param handle%	The task handle to look up.
-REM \return		The corresponding task name.
-:
-DEF FNclipboard_task_name_from_handle(handle%)
-LOCAL name%, flags%
-
-SYS "XTaskManager_TaskNameFromHandle",handle% TO name% ;flags%
-IF flags% AND 1 THEN ="???"
-=FNstring_read(name%)

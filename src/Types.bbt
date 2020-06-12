@@ -41,6 +41,8 @@ REM \return		The textual name.
 DEF FNtypes_name_from_type(filetype%)
 LOCAL hex$, len%, flags%
 
+IF filetype% < 0 OR filetype% > &FFF THEN = "-"
+
 hex$ = STR$~(filetype%)
 
 SYS "XOS_ReadVarVal", "File$Type_"+hex$, q%, 256, 0, 3 TO ,,len%; flags%

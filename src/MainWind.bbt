@@ -97,14 +97,14 @@ ENDPROC
 REM Set the content fields to reflect the current clipboard content.
 REM
 REM \param filename$	The filename of the content.
-REM \param taskname$	The name of the task owning the content.
+REM \param taskhandle$	The handle of the task owning the content.
 REM \param filetype%	The filetype of the content, or -1 for none.
 :
-DEF PROCmain_wind_set_content(filename$, taskname$, filetype%)
+DEF PROCmain_wind_set_content(filename$, taskhandle%, filetype%)
 LOCAL sprite$, validation%
 
 PROCicon_set_indirected_text(MainWindHandle%, MainWindFileNameIcon%, filename$)
-PROCicon_set_indirected_text(MainWindHandle%, MainWindOwnerIcon%, taskname$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindOwnerIcon%, FNmain_wind_task_name_from_handle(taskhandle%))
 PROCicon_set_indirected_text(MainWindHandle%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
 
 sprite$ = FNtypes_sprite_from_type(filetype%)
@@ -146,18 +146,18 @@ REM
 REM \param token$	The error message token to display.
 :
 DEF PROCmain_wind_set_proto_error(token$)
-LOCAL param$
+LOCAL handle%
 
-param$ = ""
+handle% = -1
 
 REM Set the protocol message field to an error message, and enlarge the
 REM window to show it.
 REM
 REM \param token$	The error message token to display.
-REM \param param$	The parameter to substitute into the message.
+REM \param handle%	The handle of the task to substitute into the message.
 :
-DEF PROCmain_wind_set_proto_param_error(token$, param$)
-PROCmain_wind_set_proto_text(token$, param$, 11)
+DEF PROCmain_wind_set_proto_handle_error(token$, handle%)
+PROCmain_wind_set_proto_text(token$, handle%, 11)
 
 REM If the window is already open, bring it to the front and enlarge it
 REM to show the protocol message field.
@@ -178,17 +178,17 @@ REM
 REM \param token$	The message token to display.
 :
 DEF PROCmain_wind_set_proto_message(token$)
-LOCAL param$
+LOCAL handle%
 
-param$ = ""
+handle% = -1
 
 REM Set the protocol message field to a standard message.
 REM
 REM \param token$	The message token to display.
-REM \param param$	The parameter to substitute into the message.
+REM \param handle%	The handle of the task to substitute into the message.
 :
-DEF PROCmain_wind_set_proto_param_message(token$, param$)
-PROCmain_wind_set_proto_text(token$, param$, 7)
+DEF PROCmain_wind_set_proto_handle_message(token$, handle%)
+PROCmain_wind_set_proto_text(token$, handle%, 7)
 ENDPROC
 
 
@@ -196,16 +196,18 @@ REM Update the protocol message field. Intended for internal
 REM use only.
 REM
 REM \param token$	The message token to display.
-REM \param param$	The parameter to substitute into the message.
+REM \param handle%	The handle of the task to substitute into the message.
 REM \param foreground%	The foreground Wimp colour for the icon.
 :
-DEF PROCmain_wind_set_proto_text(token$, param$, foreground%)
-LOCAL background%, message$, content$
+DEF PROCmain_wind_set_proto_text(token$, handle%, foreground%)
+LOCAL background%, message$, content$, task$
+
+task$ = FNmain_wind_task_name_from_handle(handle%)
 
 content$ = FNicon_get_text(MainWindHandle%, MainWindProtoIcon%)
 IF LEN(content$) > 0 THEN content$ += " "
 
-message$ = FNmessage_param_lookup(token$, param$, "", "", "")
+message$ = FNmessage_param_lookup(token$, task$, "", "", "")
 IF LEN(message$) > 0 THEN PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, content$ + message$)
 
 background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
@@ -250,3 +252,19 @@ SYS "Wimp_GetPointerInfo",,b%
 IF b%!12 = MainWindHandle% THEN ENDPROC
 PROCclipboard_start_drag_save(b%!0, b%!4, FNstring_leafname(FNmain_wind_get_filename), b%!12, b%!16)
 ENDPROC
+
+
+REM Given a task handle, get the task name. Returns "???" if the
+REM handle can not be resolved.
+REM
+REM \param handle%	The task handle to look up.
+REM \return		The corresponding task name.
+:
+DEF FNmain_wind_task_name_from_handle(handle%)
+LOCAL name%, flags%
+
+IF handle% = -1 THEN = "-"
+
+SYS "XTaskManager_TaskNameFromHandle",handle% TO name% ;flags%
+IF flags% AND 1 THEN ="???"
+=FNstring_read(name%)
