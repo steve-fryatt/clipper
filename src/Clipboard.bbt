@@ -265,14 +265,12 @@ REM
 REM \param message%	Pointer to the Wimp_Poll block.
 :
 DEF PROCclipboard_message_data_save_ack(message%)
-LOCAL flags%, sender_handle%, receiver_handle%, object%, size%, type%
+LOCAL flags%, receiver_handle%, object%, size%, type%
 
 CASE message%!12 OF
 WHEN ClipboardDragSaveMyRef%
 	REM We're saving the clipboard to another app, started in
 	REM PROCclipboard_start_drag_save. Update the MyRef value.
-
-	REM Clipboard Drag Save Step 2
 
 	ClipboardDragSaveMyRef% = message%!8
 
@@ -297,22 +295,30 @@ WHEN ClipboardDragSaveMyRef%
 	ENDIF
 
 WHEN ClipboardRequestMyRef%
-	PROCclipboard_copy_file(ClipboardCurrentFile$, FNstring_read(message% + 44))
-	sender_handle% = message%!4
-	message%!12 = message%!8
-	message%!16 = 3 : REM Message_DataLoad
+	REM We've been asked for the clipboard, so get the details
+	REM of our file again.
+
 	SYS "XOS_File", 23, ClipboardCurrentFile$ TO object%,,,,size%,,type% ;flags%
 	IF (flags% AND %1) OR (object% <> 1) THEN
 		PROCmain_wind_set_proto_error("BadClipFile")
 		ClipboardRequestMyRef% = -1
-	ELSE
-		message%!36 = size%
-		message%!40 = type%
-		SYS "Wimp_SendMessage", 17, message%, sender_handle% TO ,,receiver_handle%
-
-		ClipboardRequestMyRef% = message%!8
-		PROCmain_wind_set_proto_handle_message("OfferData", receiver_handle%)
+		ENDPROC
 	ENDIF
+
+	REM Copy the file to the location provided by the recipient.
+
+	PROCclipboard_copy_file(ClipboardCurrentFile$, FNstring_read(message% + 44))
+
+	REM Respond with a Message_DataLoad.
+
+	message%!12 = message%!8
+	message%!16 = 3 : REM Message_DataLoad
+	message%!36 = size%
+	message%!40 = type%
+	SYS "Wimp_SendMessage", 17, message%, message%!4 TO ,,receiver_handle%
+
+	ClipboardRequestMyRef% = message%!8
+	PROCmain_wind_set_proto_handle_message("OfferData", receiver_handle%)
 
 OTHERWISE
 	PROCmain_wind_set_proto_error("BadYourRef", "DataSaveAck")
@@ -404,21 +410,15 @@ WHEN ClipboardDragSaveMyRef%
 	ENDIF
 
 WHEN ClipboardRequestMyRef%
+	REM We've saved the clipboard file to the recipient, and
+	REM they have ack'd the Message_DataLoad that we sent.
+
 	PROCmain_wind_set_proto_message("Accepted")
 	ClipboardRequestMyRef% = -1
 
 OTHERWISE
 	PROCmain_wind_set_proto_error("BadYourRef", "DataLoadAck")
 ENDCASE
-ENDPROC
-
-
-REM Handle bounced DataSaveAck messages. Does this ever get used:
-REM do we ever send a DataLoadAck? & This is actually a 3 bounce, not 4!
-
-DEF PROCclipboard_message_data_load_ack_bounce(message%)
-PROCmain_wind_set_proto_error("RecDied")
-ClipboardSaveDestinationTask% = -1
 ENDPROC
 
 
@@ -455,6 +455,9 @@ WHEN ClipboardExamineMyRef%
 	ENDIF
 
 WHEN ClipboardRequestMyRef%
+	REM Attempting to send the clipboard data to another
+	REM task resulted in a missing ack to one of our messages.
+
 	PROCmain_wind_set_proto_error("RecDied")
 	ClipboardRequestMyRef% = -1
 ENDCASE
