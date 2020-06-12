@@ -170,13 +170,7 @@ WHEN 0
 	REM We own the clipboard...
 
 	PROCmain_wind_reset_proto
-	PROCmain_wind_set_proto_message("SendingData")
-
-	REM Ack the incoming message.
-
-	sender_handle% = message%!4
-	message%!12 = message%!8
-	SYS "Wimp_SendMessage", 19, message%
+	PROCmain_wind_set_proto_handle_message("SendingData", message%!4)
 
 	REM Get the details of our clipboard file.
 
@@ -193,6 +187,7 @@ WHEN 0
 	leaf$ = FNstring_leafname(ClipboardCurrentFile$)
 
 	message%!0 = 44 + (LEN(leaf$) + 4) AND &FC
+	message%!12 = message%!8
 	message%!16 = 1	: REM Message_DataSave
 	message%!36 = size%
 	message%!40 = type%
