@@ -160,7 +160,6 @@ REM \param message%	Pointer to the Wimp_Poll block.
 :
 DEF PROCclipper_process_bounce(message%)
 CASE b%!16 OF
-	WHEN 4			: PROCclipboard_message_data_load_ack_bounce(message%)
 	WHEN &4E383, &4AF80	: PROCurl_bounce(message%) : REM Message_URIReturnResult, Message_InetSuiteOpenURL
 	OTHERWISE		: PROCclipboard_message_bounce(message%)
 ENDPROC

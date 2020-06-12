@@ -323,6 +323,10 @@ ENDCASE
 ENDPROC
 
 
+REM Handle an incoming Message_DataLoad.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
+:
 DEF PROCclipboard_message_data_load(message%)
 LOCAL task$
 
@@ -349,12 +353,33 @@ WHEN ClipboardSaveMyRef%
 	ENDIF
 
 WHEN 0
-	REM We've taken ownership of the clipboard
+	REM The filer is asking us to load a file.
 
-	PROCclipboard_claim
+	PROCmain_wind_reset_proto
+	PROCmain_wind_set_proto_message("AskedToLoad")
+
+	REM Send a Message_DataLoadAck back to the filer.
+
+	message%!12 = message%!8
+	message%!16 = 4 : REM Message_DataLoadAck
+	SYS "Wimp_SendMessage", 17, message%, message%!4
+
+	REM Record the details of what we currently own.
+
 	ClipboardCurrentFile$ = FNstring_read(message% + 44)
 	ClipboardCurrentOwnerTask% = ClipperTaskHandle%
 	ClipboardCurrentType% = message%!40
+
+	REM Send a Message_ClaimEntity to take ownership of the clipboard.
+
+	q%!0 = 24
+	q%!12 = 0
+	q%!16 = &F	: REM Message_ClaimEntity
+	q%!20 = %100	: REM Claiming the clipboard.
+	SYS "Wimp_SendMessage", 17, q%, 0
+
+	REM Update the display.
+
 	PROCmain_wind_set_content(ClipboardCurrentFile$, TaskName$, ClipboardCurrentType%)
 	PROCmain_wind_set_proto_message("ItsOurs")
 
@@ -364,21 +389,10 @@ ENDCASE
 ENDPROC
 
 
-REM Broadcast a Message_ClaimEntity when we have taken ownership
-REM of the clipboard content.
+REM Handle an incoming Message_DataLoadAck.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
 :
-DEF PROCclipboard_claim
-q%!0 = 24
-q%!12 = 0
-q%!16 = &F : REM Message_ClaimEntity
-q%!20 = %100
-SYS "Wimp_SendMessage", 18, q%, 0
-ENDPROC
-
-
-
-
-
 DEF PROCclipboard_message_data_load_ack(message%)
 CASE message%!12 OF
 WHEN ClipboardDragSaveMyRef%
@@ -401,6 +415,8 @@ ENDCASE
 ENDPROC
 
 
+REM Handle bounced DataSaveAck messages. Does this ever get used:
+REM do we ever send a DataLoadAck? & This is actually a 3 bounce, not 4!
 
 DEF PROCclipboard_message_data_load_ack_bounce(message%)
 PROCmain_wind_set_proto_error("RecDied")
@@ -415,12 +431,13 @@ REM \param message%	Pointer to the Wimp_Poll data block.
 DEF PROCclipboard_message_bounce(message%)
 CASE message%!8 OF
 WHEN ClipboardDragSaveMyRef%
+	REMCASE message%!16 OF
+
 
 	REM Clipboard Drag Save Step 4
 
 	ClipboardDragSaveMyRef% = -1
 	PROCmain_wind_set_proto_message("NoInterest")
-	ENDPROC
 
 WHEN ClipboardExamineMyRef%
 	REM A message sent to examine the clipboard bounced.
