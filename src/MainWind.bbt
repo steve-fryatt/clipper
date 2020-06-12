@@ -130,19 +130,34 @@ DEF FNmain_wind_get_filename
 =FNicon_get_text(MainWindHandle%, MainWindFileNameIcon%)
 
 
+REM Reset the protocol message field.
+REM
+REM This will not refresh the display, which will require a call to
+REM one of the "set" procedures.
+:
+DEF PROCmain_wind_reset_proto
+PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, "")
+ENDPROC
+
+
 REM Set the protocol message field to an error message, and enlarge the
 REM window to show it.
 REM
-REM \param token$	The error message token to display
+REM \param token$	The error message token to display.
 :
 DEF PROCmain_wind_set_proto_error(token$)
-LOCAL background%, message$
+LOCAL param$
 
-message$ = FNmessage_lookup(token$)
-PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, message$)
+param$ = ""
 
-background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
-PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, 11, background%)
+REM Set the protocol message field to an error message, and enlarge the
+REM window to show it.
+REM
+REM \param token$	The error message token to display.
+REM \param param$	The parameter to substitute into the message.
+:
+DEF PROCmain_wind_set_proto_param_error(token$, param$)
+PROCmain_wind_set_proto_text(token$, param$, 11)
 
 REM If the window is already open, bring it to the front and enlarge it
 REM to show the protocol message field.
@@ -160,16 +175,41 @@ ENDPROC
 
 REM Set the protocol message field to a standard message.
 REM
-REM \param token$	The message token to display
+REM \param token$	The message token to display.
 :
 DEF PROCmain_wind_set_proto_message(token$)
-LOCAL background%, message$
+LOCAL param$
 
-message$ = FNmessage_lookup(token$)
-PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, message$)
+param$ = ""
+
+REM Set the protocol message field to a standard message.
+REM
+REM \param token$	The message token to display.
+REM \param param$	The parameter to substitute into the message.
+:
+DEF PROCmain_wind_set_proto_param_message(token$, param$)
+PROCmain_wind_set_proto_text(token$, param$, 7)
+ENDPROC
+
+
+REM Update the protocol message field. Intended for internal
+REM use only.
+REM
+REM \param token$	The message token to display.
+REM \param param$	The parameter to substitute into the message.
+REM \param foreground%	The foreground Wimp colour for the icon.
+:
+DEF PROCmain_wind_set_proto_text(token$, param$, foreground%)
+LOCAL background%, message$, content$
+
+content$ = FNicon_get_text(MainWindHandle%, MainWindProtoIcon%)
+IF LEN(content$) > 0 THEN content$ += " "
+
+message$ = FNmessage_param_lookup(token$, param$, "", "", "")
+IF LEN(message$) > 0 THEN PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, content$ + message$)
 
 background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
-PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, 7, background%)
+PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, foreground%, background%)
 ENDPROC
 
 
