@@ -213,7 +213,7 @@ Updated by Stephen Fryatt
 
 <list>
 <li>Renamed from <cite>Clipboard</cite> to <cite>Clipper</cite> to avoid an allocation clash.
-<li>Licence changed to EUPL, to reflect the extensive use of <cite>WimpLib</cite> in the code.
+<li>Licence changed to EUPL, following extensive refactoring of the code, to reflect the significant use of <cite>WimpLib</cite> in the application.
 <li>Removed TAL icon from <window>program information</window> window to avoid adding an un-allocated sprite name to Wimp Sprite Pool.
 <li>Add support for Interactive Help throughout the application.
 <li>Extensive code refactoring, including the use of WimpLib for common tasks.
@@ -231,10 +231,10 @@ Updated by Stephen Fryatt
 Updates and Contacting Me
 -------------------------
 
-  If you have any comments about the 32-bit version of Clipper and
-  IcnClipBrd, or would like to report any bugs that you find, you can email
-  me at the address below.
-  
+  If you have any comments about the 32-bit version of Clipper and, or
+  would like to report any bugs that you find, you can email me at the
+  address below.
+
   Any updates to the module will be made available on my website, at
   http://www.stevefryatt.org.uk/software/clipboard/
 
