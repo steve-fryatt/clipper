@@ -21,7 +21,17 @@ Clipper - A Global Clipboard utility                             Version $$versi
 
 <chapter title="License" file="License">
 
-<cite>Clipper</cite> is in the public domain and may be freely copied.
+<cite>Clipper</cite> is licensed under the EUPL, Version&nbsp;1.1 only (the &ldquo;Licence&rdquo;); you may not use this work except in compliance with the Licence.
+
+You may obtain a copy of the Licence at <link ref="#url http://joinup.ec.europa.eu/software/page/eupl">http://joinup.ec.europa.eu/software/page/eupl</link>
+
+Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an &ldquo;<strong>as is</strong>&rdquo; basis, <strong>without warranties or conditions of any kind</strong>, either express or implied.
+
+See the Licence for the specific language governing permissions and limitations under the Licence.
+
+The source for <cite>Clipper</cite> can be found alongside this binary download, at <link ref="#url http://www.stevefryatt.org.uk/software">http://www.stevefryatt.org.uk/software</link>
+
+The necessary libraries and build tools can be found at <link ref="#url http://www.stevefryatt.org.uk/software/build">http://www.stevefryatt.org.uk/software/build</link>
 
 </chapter>
 
@@ -203,6 +213,7 @@ Updated by Stephen Fryatt
 
 <list>
 <li>Renamed from <cite>Clipboard</cite> to <cite>Clipper</cite> to avoid an allocation clash.
+<li>Licence changed to EUPL, to reflect the extensive use of <cite>WimpLib</cite> in the code.
 <li>Removed TAL icon from <window>program information</window> window to avoid adding an un-allocated sprite name to Wimp Sprite Pool.
 <li>Add support for Interactive Help throughout the application.
 <li>Extensive code refactoring, including the use of WimpLib for common tasks.
