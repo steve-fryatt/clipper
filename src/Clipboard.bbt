@@ -90,6 +90,24 @@ ENDIF
 ENDPROC
 
 
+REM Handle an incoming Message_TaskCloseDown, checking to see if
+REM the passing task is the one that owned the clipboard.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
+:
+DEF PROCclipboard_message_task_close_down(message%)
+
+REM We're not interested if this isn't the clipboard owner.
+
+IF message%!4 <> ClipboardCurrentOwnerTask% THEN ENDPROC
+
+ClipboardCurrentOwnerTask% = -1
+ClipboardCurrentType% = -1
+ClipboardCurrentFile$ = ""
+PROCclipboard_examine
+ENDPROC
+
+
 REM Examine the current state of the clipboard in order to identify the
 REM owner and the content.
 REM

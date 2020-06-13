@@ -150,6 +150,7 @@ CASE b%!16 OF
 	WHEN &F		: PROCclipboard_message_claim_entity(message%)
 	WHEN &10	: PROCclipboard_message_data_request(message%)
 	WHEN &502	: PROCihelp_send(message%)
+	WHEN &400C3	: PROCclipboard_message_task_close_down(message%)
 ENDCASE
 ENDPROC
 
@@ -193,9 +194,10 @@ q%!12 = 4
 q%!16 = &F
 q%!20 = &10
 q%!24 = &502
-q%!28 = &4E383
-q%!32 = &4AF80
-q%!36 = 0
+q%!28 = &400C3
+q%!32 = &4E383
+q%!36 = &4AF80
+q%!40 = 0
 
 SYS "Wimp_Initialise", 310, &4B534154, TaskName$, q% TO ,ClipperTaskHandle%
 
