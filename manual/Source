@@ -207,6 +207,7 @@ Updated by Stephen Fryatt
 <li>Add support for Interactive Help throughout the application.
 <li>Extensive code refactoring, including the use of WimpLib for common tasks.
 <li>Fix Data Transfer Protocol implementation, including several missing DataLoadAck messages.
+<li>Watch for the application owning the clipboard quitting (ticket&nbsp;#712).
 </list>
 
 </chapter>
