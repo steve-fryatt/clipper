@@ -1,0 +1,52 @@
+REM >!Types
+REM
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
+
+
+REM Find a file icon sprite for a numeric filetype.
+REM
+REM \param filetype%	The filetype to look up.
+REM \return		The sprite name, in the Wimp pool.
+:
+DEF FNtypes_sprite_from_type(filetype%)
+IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
+="file_" + RIGHT$("000" + STR$~(filetype%), 3)
+
+
+REM Find the textual name of a filetype from its numeric value.
+REM
+REM \param filetype%	The filetype to look up.
+REM \return		The textual name.
+:
+DEF FNtypes_name_from_type(filetype%)
+LOCAL hex$, len%, flags%
+
+IF filetype% < 0 OR filetype% > &FFF THEN = "-"
+
+hex$ = STR$~(filetype%)
+
+SYS "XOS_ReadVarVal", "File$Type_"+hex$, q%, 256, 0, 3 TO ,,len%; flags%
+IF flags% AND 1 THEN =hex$
+
+q%?len% = 0
+=FNstring_read(q%)

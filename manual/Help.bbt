@@ -2,7 +2,7 @@ REM >!Help
 REM
 REM Copyright 2001-2020, Stephen Fryatt (info@stevefryatt.org.uk)
 REM
-REM This file is part of Clipboard:
+REM This file is part of Clipper:
 REM
 REM   http://www.stevefryatt.org.uk/software/
 REM
@@ -30,8 +30,8 @@ REM Change this direcrtory and the names of the target files and variables as re
 
 strong_help$ = ""
 text_help$ = "HelpText"
-resource_dir$ = "<Clipboard$Dir>.Resources"
-help_text_var$ = "Clipboard$HelpText"
+resource_dir$ = "<Clipper$Dir>.Resources"
+help_text_var$ = "Clipper$HelpText"
 
 DIM b% 255
 

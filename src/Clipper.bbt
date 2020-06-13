@@ -1,0 +1,232 @@
+REM >!Clipper
+REM
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
+
+LIBRARY "BASIC:Icon"
+LIBRARY "BASIC:Menu"
+LIBRARY "BASIC:Message"
+LIBRARY "BASIC:Resources"
+LIBRARY "BASIC:String"
+LIBRARY "BASIC:Template"
+LIBRARY "BASIC:Url"
+LIBRARY "BASIC:WimpError"
+LIBRARY "BASIC:Window"
+
+LIBRARY "src/Clipboard.bbt"
+LIBRARY "src/IHelp.bbt"
+LIBRARY "src/InfoWind.bbt"
+LIBRARY "src/MainWind.bbt"
+LIBRARY "src/Types.bbt"
+
+REM Set up the basic error handling, then initialise.
+
+PROCwimperror_initialise("Clipper", "!clipper")
+ON ERROR result% = FNwimperror_program : END
+
+ClipperTaskHandle% = -1
+
+PROCclipper_initialise
+
+REM Poll the Wimp until exit.
+
+Quit%=FALSE
+
+ON ERROR Quit% = FNwimperror_program
+
+WHILE NOT Quit%
+	PROCclipper_poll
+ENDWHILE
+
+IF ClipperTaskHandle% <> -1 THEN SYS "Wimp_CloseDown", ClipperTaskHandle%, &4B534154
+END
+
+
+REM Handle calls to Wimp_Poll and process the responses.
+:
+DEF PROCclipper_poll
+LOCAL reason%
+
+SYS "Wimp_Poll", %110001, b% TO reason%
+
+CASE reason% OF
+	WHEN 2:		SYS "Wimp_OpenWindow",,b%
+	WHEN 3:		SYS "Wimp_CloseWindow",,b%
+	WHEN 6:		PROCclipper_mouse_click(b%)
+	WHEN 7:		PROCmain_window_drag_box
+	WHEN 8:		PROCclipper_keypress(b%)
+	WHEN 9 :	PROCclipper_menu_selection(b%)
+	WHEN 17,18 :	PROCclipper_process_message(b%)
+	WHEN 19 :	PROCclipper_process_bounce(b%)
+ENDCASE
+ENDPROC
+
+
+REM Handle mouse clicks in Clipper windows.
+REM
+REM \param pointer%	Pointer to the Wimp_Poll block.
+:
+DEF PROCclipper_mouse_click(pointer%)
+CASE pointer%!12 OF
+WHEN -2
+	IF pointer%!8 = 2 THEN
+		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
+	ELSE
+		PROCmain_window_toggle(pointer%!0, pointer%!4)
+		PROCclipboard_examine
+	ENDIF
+
+WHEN MainWindHandle%
+	IF pointer%!8 = 2 THEN
+		PROCmenu_create(IconbarMenu%, pointer%!0, pointer%!4)
+	ELSE
+		PROCmain_wind_click(pointer%!8, pointer%!16)
+	ENDIF
+
+WHEN InfoWindHandle%
+	PROCinfo_wind_click(pointer%!8, pointer%!16)
+ENDCASE
+ENDPROC
+
+
+REM Handle keypresses in Clipper windows.
+REM
+REM \param keypress%	Pointer to the Wimp_Poll block
+:
+DEF PROCclipper_keypress(keypress%)
+CASE keypress%!0 OF
+WHEN MainWindHandle%
+	PROCmain_wind_keypress(keypress%!24)
+OTHERWISE
+	SYS "Wimp_ProcessKey", keypress%!24
+ENDCASE
+ENDPROC
+
+
+REM Handle selections from the iconbar menu.
+REM
+REM \param selection%	Pointer to the menu selection block.
+:
+DEF PROCclipper_menu_selection(selection%)
+IF FNmenu_current_handle <> IconbarMenu% THEN ENDPROC
+
+CASE selection%!0 OF
+	WHEN 1		: OSCLI("Filer_Run <Clipper$Dir>.!Help")
+	WHEN 2		: Quit% = TRUE
+ENDCASE
+ENDPROC
+
+
+REM Handle incoming Wimp messages.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
+:
+DEF PROCclipper_process_message(message%)
+CASE b%!16 OF
+	WHEN 0		: Quit% = TRUE : REM Message_Quit
+	WHEN 1		: PROCclipboard_message_data_save(message%)
+	WHEN 2		: PROCclipboard_message_data_save_ack(message%)
+	WHEN 3		: PROCclipboard_message_data_load(message%)
+	WHEN 4		: PROCclipboard_message_data_load_ack(message%)
+	WHEN &F		: PROCclipboard_message_claim_entity(message%)
+	WHEN &10	: PROCclipboard_message_data_request(message%)
+	WHEN &502	: PROCihelp_send(message%)
+	WHEN &400C3	: PROCclipboard_message_task_close_down(message%)
+ENDCASE
+ENDPROC
+
+
+REM Handle boinced Wimp messages.
+REM
+REM \param message%	Pointer to the Wimp_Poll block.
+:
+DEF PROCclipper_process_bounce(message%)
+CASE b%!16 OF
+	WHEN &4E383, &4AF80	: PROCurl_bounce(message%) : REM Message_URIReturnResult, Message_InetSuiteOpenURL
+	OTHERWISE		: PROCclipboard_message_bounce(message%)
+ENDPROC
+
+
+REM Initialise Clipper, both internally and with the Wimp.
+:
+DEF PROCclipper_initialise
+LOCAL resources$
+
+DIM b% 1024, q% 256, a% 255
+
+REM Locate the application resources.
+
+resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
+
+REM Load the messages file.
+
+PROCmessage_initialise(resources$ + "Messages")
+
+TaskName$ = FNmessage_lookup("TaskName")
+TaskSprite$ = FNmessage_lookup("TaskSpr")
+PROCwimperror_initialise(TaskName$, TaskSprite$)
+
+REM Initialise with the Wimp.
+
+q%!0 = 1
+q%!4 = 2
+q%!8 = 3
+q%!12 = 4
+q%!16 = &F
+q%!20 = &10
+q%!24 = &502
+q%!28 = &400C3
+q%!32 = &4E383
+q%!36 = &4AF80
+q%!40 = 0
+
+SYS "Wimp_Initialise", 310, &4B534154, TaskName$, q% TO ,ClipperTaskHandle%
+
+PROCtemplate_open(resources$ + "Templates")
+PROCinfo_wind_initialise
+PROCmain_wind_initialise
+PROCtemplate_close
+
+REM Create the iconbar icon
+
+b%!0 = -1
+b%!4 = 0
+b%!8 = 0
+b%!12 = 76
+b%!16 = 68
+b%!20 = %11000000011010
+$(b%+24) = TaskSprite$
+SYS "Wimp_CreateIcon",,b%
+
+REM Initialise and load the menu templates
+
+PROCmenu_initialise
+
+b%!0 = InfoWindHandle%
+PROCmenu_load_templates(resources$ + "Menus", b%)
+IconbarMenu% = b%!0
+
+REM Initialise the clipboard monitor.
+
+PROCclipboard_initialise
+PROCclipboard_examine
+ENDPROC

@@ -8,7 +8,7 @@
 
 <literal mode="Text">
 =============================================================================
-Clipboard - A Global Clipboard utility                           Version $$version$$
+Clipper - A Global Clipboard utility                             Version $$version$$
 
 (c) Thomas Leonard, 1999 (32-bit by Stephen Fryatt) $$date$$
 =============================================================================
@@ -21,7 +21,7 @@ Clipboard - A Global Clipboard utility                           Version $$versi
 
 <chapter title="License" file="License">
 
-<cite>Clipboard</cite> is in the public domain and may be freely copied.
+<cite>Clipper</cite> is in the public domain and may be freely copied.
 
 </chapter>
 
@@ -32,11 +32,11 @@ Clipboard - A Global Clipboard utility                           Version $$versi
 
 The global clipboard provides a way of transferring data between applications. You select the data in one application and cut or copy it onto the clipboard (usually using <key>Ctrl-X</key> and <key>Ctrl-C</key>). You then move to the other application and paste the data from the clipboard (usually <key>Ctrl-V</key>).
 
-<cite>Clipboard</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipboard</cite> to put that file on the clipboard.
+<cite>Clipper</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipper</cite> to put that file on the clipboard.
 
-The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipboard</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/software/clipboard/">http://www.stevefryatt.org.uk/software/clipboard/</link>.
+The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipper</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/software/clipboard/">http://www.stevefryatt.org.uk/software/clipboard/</link>.
 
-The <cite>Clipboard</cite> utility and <cite>IcnClipBrd</cite> module were originally written by Thomas Leonard, and have been converted to 32-bit for use on RISC&nbsp;OS&nbsp;5 by myself (Stephen Fryatt). I would like to thank Thomas for allowing his code to be placed in the Public Domain; any problems encountered using the updated application and module are likely to be my fault and should be reported first to the address below.
+The <cite>Clipper</cite> utility was originally called <cite>Clipboard</cite> and written, along with the <cite>IcnClipBrd</cite> module, by Thomas Leonard. It was converted to 32-bit for use on RISC&nbsp;OS&nbsp;5 by myself (Stephen Fryatt), and was renamed <cite>Clipper</cite> in 2020 to resolve a clash with a legitimately-allocated application name. I would like to thank Thomas for allowing his code to be placed in the Public Domain; any problems encountered using the updated application and module are likely to be my fault and should be reported first to the address below.
 
 </chapter>
 
@@ -45,18 +45,18 @@ The <cite>Clipboard</cite> utility and <cite>IcnClipBrd</cite> module were origi
 
 <chapter title="Installation" file="Install">
 
-To use <cite>Clipboard</cite>, simply run it from a Filer window. If you always want it on the iconbar, it can be included in the list of applications to be run at startup in the <icon>Boot</icon> section of Configure.
+To use <cite>Clipper</cite>, simply run it from a Filer window. If you always want it on the iconbar, it can be included in the list of applications to be run at startup in the <icon>Boot</icon> section of Configure.
 
 </chapter>
 
 
 
 
-<chapter title="Using Clipboard" file="Use">
+<chapter title="Using Clipper" file="Use">
 
-Once <cite>Clipboard</cite> is loaded, it will install an icon on the icon bar. Click <mouse>select</mouse> on this icon to open the <window>Save clipboard</window> window. If there is anything on the clipboard then you will be able to drag the icon to a directory or to another application to save the clipboard. You can put a file onto the clipboard by dragging it to this window.
+Once <cite>Clipper</cite> is loaded, it will install an icon on the icon bar. Click <mouse>select</mouse> on this icon to open the <window>Save clipboard</window> window. If there is anything on the clipboard then you will be able to drag the icon to a directory or to another application to save the clipboard. You can put a file onto the clipboard by dragging it to this window.
 
-If you toggle the window size then you can see an extra box which indicates what <cite>Clipboard</cite> is doing. This may be helpful for programmers trying to work out why their program doesn&rsquo;t work with <cite>Clipboard</cite>. Note that the problem may well be <cite>Clipboard</cite>&rsquo;s fault!
+If you toggle the window size then you can see an extra box which indicates what <cite>Clipper</cite> is doing. This may be helpful for programmers trying to work out why their program doesn&rsquo;t work with <cite>Clipper</cite>. Note that the problem may well be <cite>Clipper</cite>&rsquo;s fault!
 
 </chapter>
 
@@ -65,7 +65,7 @@ If you toggle the window size then you can see an extra box which indicates what
 
 <chapter title="Other information" file="Other">
 
-<cite>Clipboard</cite> was written by Thomas Leonard. The 32-bit conversion was done by Stephen Fryatt.
+<cite>Clipper</cite> was written by Thomas Leonard. The 32-bit conversion was done by Stephen Fryatt.
 
 </chapter>
 
@@ -182,7 +182,7 @@ Updated by Stephen Fryatt
 Updated by Stephen Fryatt
 
 <list>
-<li><cite>IcnClipBrd</cite> module removed from </cite>Clipboard</cite>, and supplied separately to simplify future updates.
+<li><cite>IcnClipBrd</cite> module removed from <cite>Clipper</cite>, and supplied separately to simplify future updates.
 </list>
 
 
@@ -196,6 +196,20 @@ Updated by Stephen Fryatt
 <li>Correctly close Templates file after use.
 </list>
 
+
+<subhead title="Test Build">
+
+Updated by Stephen Fryatt
+
+<list>
+<li>Renamed from <cite>Clipboard</cite> to <cite>Clipper</cite> to avoid an allocation clash.
+<li>Removed TAL icon from <window>program information</window> window to avoid adding an un-allocated sprite name to Wimp Sprite Pool.
+<li>Add support for Interactive Help throughout the application.
+<li>Extensive code refactoring, including the use of WimpLib for common tasks.
+<li>Fix Data Transfer Protocol implementation, including several missing DataLoadAck messages.
+<li>Watch for the application owning the clipboard quitting (ticket&nbsp;#712).
+</list>
+
 </chapter>
 
 
@@ -206,7 +220,7 @@ Updated by Stephen Fryatt
 Updates and Contacting Me
 -------------------------
 
-  If you have any comments about the 32-bit version of Clipboard and
+  If you have any comments about the 32-bit version of Clipper and
   IcnClipBrd, or would like to report any bugs that you find, you can email
   me at the address below.
   

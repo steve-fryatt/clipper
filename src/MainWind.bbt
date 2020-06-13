@@ -1,0 +1,269 @@
+REM >!MainWind
+REM
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
+
+
+REM Load the main window template and initialise the variables.
+:
+DEF PROCmain_wind_initialise
+PROCtemplate_load_claim("Main", b%, 1024, -1)
+SYS "Wimp_CreateWindow",,b% TO MainWindHandle%
+
+REM The icon handles.
+
+MainWindFileSprIcon% = 0
+MainWindFileTypeIcon% = 2
+MainWindFileNameIcon% = 3
+MainWindOKIcon% = 4
+MainWindOwnerIcon% = 6
+MainWindProtoIcon% = 7
+ENDPROC
+
+
+REM Handle clicks in the main window.
+REM
+REM \param button%	The mouse button used for the click.
+REM \param icon%	The icon over which the click occurred.
+:
+DEF PROCmain_wind_click(button%, icon%)
+IF button% <> 4 THEN ENDPROC
+
+CASE icon% OF
+WHEN MainWindOKIcon%
+	PROCclipboard_save_data(FNmain_wind_get_filename, b%, FALSE)
+WHEN MainWindFileSprIcon%
+	PROCmain_wind_drag_icon(MainWindHandle%, MainWindFileSprIcon%)
+ENDCASE
+ENDPROC
+
+
+REM Handle keypresses in the main window.
+REM
+REM \param key%		The key which was pressed.
+:
+DEF PROCmain_wind_keypress(key%)
+CASE key% OF
+WHEN 13 : PROCclipboard_save_data(FNmain_wind_get_filename, b%, FALSE)
+WHEN 27 : PROCmain_wind_close
+OTHERWISE : SYS "Wimp_ProcessKey", key%
+ENDCASE
+ENDPROC
+
+
+REM Toggle the state of the main window, opening it if it
+REM is closed, or closing it if it is open.
+REM
+REM \param x%		The X coordinate for the centre of the window.
+REM \param y%		The Y coordinate for the centre of the window.
+:
+DEF PROCmain_window_toggle(x%, y%)
+IF FNwindow_is_open(MainWindHandle%) THEN
+	PROCwindow_close(MainWindHandle%)
+ELSE
+	PROCwindow_open_centred_at(MainWindHandle%, x%, y%)
+	PROCicon_put_caret_at_end(MainWindHandle%, MainWindFileNameIcon%)
+ENDIF
+ENDPROC
+
+
+REM Close the main window.
+:
+DEF PROCmain_wind_close
+PROCwindow_close(MainWindHandle%)
+ENDPROC
+
+
+REM Set the content fields to reflect the current clipboard content.
+REM
+REM \param filename$	The filename of the content.
+REM \param taskhandle$	The handle of the task owning the content.
+REM \param filetype%	The filetype of the content, or -1 for none.
+:
+DEF PROCmain_wind_set_content(filename$, taskhandle%, filetype%)
+LOCAL sprite$, validation%
+
+PROCicon_set_indirected_text(MainWindHandle%, MainWindFileNameIcon%, filename$)
+PROCicon_set_indirected_text(MainWindHandle%, MainWindOwnerIcon%, FNmain_wind_task_name_from_handle(taskhandle%))
+PROCicon_set_indirected_text(MainWindHandle%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
+
+sprite$ = FNtypes_sprite_from_type(filetype%)
+validation% = FNicon_validation(MainWindHandle%, MainWindFileSprIcon%)
+IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2;NIcon"
+
+SYS "Wimp_GetCaretPosition",,q%
+IF q%!0 = MainWindHandle% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
+
+PROCicon_set_shaded(MainWindHandle%, MainWindFileNameIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileSprIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindOKIcon%, FALSE)
+PROCicon_set_shaded(MainWindHandle%, MainWindOwnerIcon%, filetype% = -1)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileTypeIcon%, filetype% = -1)
+ENDPROC
+
+
+REM Get the current filename from the filename field.
+REM
+REM \return		The filename in the field.
+:
+DEF FNmain_wind_get_filename
+=FNicon_get_text(MainWindHandle%, MainWindFileNameIcon%)
+
+
+REM Reset the protocol message field.
+REM
+REM This will not refresh the display, which will require a call to
+REM one of the "set" procedures.
+:
+DEF PROCmain_wind_reset_proto
+PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, "")
+ENDPROC
+
+
+REM Set the protocol message field to an error message, and enlarge the
+REM window to show it.
+REM
+REM \param token$	The error message token to display.
+:
+DEF PROCmain_wind_set_proto_error(token$)
+LOCAL handle%
+
+handle% = -1
+
+REM Set the protocol message field to an error message, and enlarge the
+REM window to show it.
+REM
+REM \param token$	The error message token to display.
+REM \param handle%	The handle of the task to substitute into the message.
+:
+DEF PROCmain_wind_set_proto_handle_error(token$, handle%)
+PROCmain_wind_set_proto_text(token$, handle%, 11)
+
+REM If the window is already open, bring it to the front and enlarge it
+REM to show the protocol message field.
+
+q%!0 = MainWindHandle%
+SYS "Wimp_GetWindowState",, q%
+
+IF q%!32 AND (1 << 16) THEN
+	q%!8 -= 408
+	q%!28 = -1
+	SYS "Wimp_OpenWindow",, q%
+ENDIF
+ENDPROC
+
+
+REM Set the protocol message field to a standard message.
+REM
+REM \param token$	The message token to display.
+:
+DEF PROCmain_wind_set_proto_message(token$)
+LOCAL handle%
+
+handle% = -1
+
+REM Set the protocol message field to a standard message.
+REM
+REM \param token$	The message token to display.
+REM \param handle%	The handle of the task to substitute into the message.
+:
+DEF PROCmain_wind_set_proto_handle_message(token$, handle%)
+PROCmain_wind_set_proto_text(token$, handle%, 7)
+ENDPROC
+
+
+REM Update the protocol message field. Intended for internal
+REM use only.
+REM
+REM \param token$	The message token to display.
+REM \param handle%	The handle of the task to substitute into the message.
+REM \param foreground%	The foreground Wimp colour for the icon.
+:
+DEF PROCmain_wind_set_proto_text(token$, handle%, foreground%)
+LOCAL background%, message$, content$, task$
+
+task$ = FNmain_wind_task_name_from_handle(handle%)
+
+content$ = FNicon_get_text(MainWindHandle%, MainWindProtoIcon%)
+IF LEN(content$) > 0 THEN content$ += " "
+
+message$ = FNmessage_param_lookup(token$, task$, "", "", "")
+IF LEN(message$) > 0 THEN PROCicon_set_indirected_text(MainWindHandle%, MainWindProtoIcon%, content$ + message$)
+
+background% = FNicon_background_colour(MainWindHandle%, MainWindProtoIcon%)
+PROCicon_set_colours(MainWindHandle%, MainWindProtoIcon%, foreground%, background%)
+ENDPROC
+
+
+REM Process drags on a file save icon.
+REM
+REM \param window%	The handle of the window.
+REM \param icon%	The handle of the icon.
+:
+DEF PROCmain_wind_drag_icon(!q%, q%!4)
+LOCAL minx%, miny%, maxx%, maxy%, xoff%
+
+SYS "Wimp_GetIconState",,q%
+
+minx% = q%!8
+miny% = q%!12
+maxx% = q%!16
+maxy% = q%!20
+
+SYS "Wimp_GetWindowState",,q%
+
+xoff% = q%!4
+
+q%!0 = minx% + xoff%
+q%!4 = miny% + q%!16
+q%!8 = maxx% + xoff%
+q%!12 = maxy% + q%!16
+
+SYS "DragASprite_Start", %11000101, 1, FNtypes_sprite_from_type(ClipboardCurrentType%), q%
+ENDPROC
+
+
+REM Handle User Drag Box events, signalling the end of a drag
+REM for our file icon.
+:
+DEF PROCmain_window_drag_box
+SYS "DragASprite_Stop"
+SYS "Wimp_GetPointerInfo",,b%
+IF b%!12 = MainWindHandle% THEN ENDPROC
+PROCclipboard_start_drag_save(b%!0, b%!4, FNstring_leafname(FNmain_wind_get_filename), b%!12, b%!16)
+ENDPROC
+
+
+REM Given a task handle, get the task name. Returns "???" if the
+REM handle can not be resolved.
+REM
+REM \param handle%	The task handle to look up.
+REM \return		The corresponding task name.
+:
+DEF FNmain_wind_task_name_from_handle(handle%)
+LOCAL name%, flags%
+
+IF handle% = -1 THEN = "-"
+
+SYS "XTaskManager_TaskNameFromHandle",handle% TO name% ;flags%
+IF flags% AND 1 THEN ="???"
+=FNstring_read(name%)

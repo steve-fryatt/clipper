@@ -1,0 +1,71 @@
+REM >!IHelp
+REM
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
+
+
+REM Process requests for interactive help text.
+REM
+REM \param message%		Pointer to the Message_HelpRequest block.
+:
+DEF PROCihelp_send(message%)
+LOCAL root$, suffix$, found%, message$
+
+REM Compare the window handle to the windows we know about, and find the
+REM relevant token name.
+
+CASE message%!32 OF
+	WHEN -2			: root$ = "IconBar"
+	WHEN MainWindHandle%	: root$ = "Main"
+	WHEN InfoWindHandle%	: root$ = "Info"
+	OTHERWISE		: root$ = ""
+ENDCASE
+
+REM Look up the help text, either as a window message or by checking the
+REM menus that belong to us.
+
+IF root$ <> "" THEN
+	suffix$ = FNicon_validation_command(message%!32, message%!36, "N")
+	IF suffix$ <> "" THEN root$ += "." + suffix$
+
+	found% = FNmessage_lookup_result("Help." + root$, message$)
+ELSE
+	SYS "Wimp_GetMenuState", 1, q%, message%!32, message%!36
+	CASE FNmenu_current_handle OF
+		WHEN IconbarMenu%	: root$ = "IconBarMenu." + RIGHT$("00" + STR$(!q%), 2)
+	ENDCASE
+	
+	IF root$ <> "" THEN found% = FNmessage_lookup_result("Help." + root$, message$)
+ENDIF
+
+REM If no message was found, give up now.
+
+IF NOT found% THEN ENDPROC
+
+REM If a message was found, send it back to the requestor.
+
+message%!12 = message%!8
+message%!16 = &503 : REM Message_HelpReply
+$(message% + 20) = message$ + CHR$(0)
+!message% = 24+(LEN(message$) AND &FFFFFC)
+SYS "Wimp_SendMessage", 17, message%, message%!4
+ENDPROC

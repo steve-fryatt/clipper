@@ -1,0 +1,75 @@
+# Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+#
+# This file is part of Clipper:
+#
+#   http://www.stevefryatt.org.uk/software/
+#
+# Licensed under the EUPL, Version 1.1 only (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+#
+# You may obtain a copy of the Licence at:
+#
+#   http://joinup.ec.europa.eu/software/page/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis, WITHOUT WARRANTIES
+# OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+
+TaskName:Clipper
+
+TaskSpr:!Clipper
+
+SupportURL:http://www.stevefryatt.org.uk/software/clipboard/
+
+URLFailed:Could not find an application to launch the given URL.
+BadClipFileErr:The clipboard file was not found, or was an invalid object.
+DragSave:To save, drag the file icon to a directory viewer.
+
+# Protocol Messages
+
+
+SearchOwner:Looking for owner...
+ItsOurs:I own it
+BadHandle:Bad DataSave handle from %0
+FoundOwner:Found %0
+NoClipboard:No clipboard
+OfferData:Offering data to %0...
+RecdAck:Received ack from %0...
+RecdAckDone:Received ack from %0
+SendAck:Send ack to %0...
+SendData:Send data to %0...
+Accepted:Send ack to %0
+AskToLoad:Asking %0 to load data...
+AskToSave:Asking %0 to save data...
+AskedToLoad:Asked to load data...
+NoSaveIn:I don't support direct saves in!
+BadYourRef:Bad YourRef field.
+SendingData:%0 requested clipboard...
+RecDied:Receiver died!
+BadClipFile:Bad clipboard file
+NoInterest:%0 not interested
+
+# Interactive Help Messages
+
+Help.IconBar:\TClipper application.|MIt allows the global clipboard to be examined, edited and saved.|M\Sopen the clipboard viewer.
+
+Help.Info:\Wthe program information \w for the Clipper application.
+Help.Info.Email:\Wthe program information \w for the Clipper application.|M\Ssend an email to its maintainer.
+Help.Info.Website:\Wthe program information \w for the Clipper application.|M\Svisit its website for information and updates.
+
+Help.Main:\Wthe Clipper \w.|MIt allows the global clipboard to be examined, edited and saved.|MDrag a file here to place its contents on the clipboard.
+Help.Main.Icon:\Tfile currently held on the global clipboard.|M\Dsave it to disc or import it into another application.
+Help.Main.Type:\Ttype of the data currently held on the global clipboard.
+Help.Main.Filename:\Tfilename of the data currently held on the global clipboard.|MChange the name if you wish to save the data to disc.
+Help.Main.OK:\Ssave the clipboard contents to the location shown in the field on the left.
+Help.Main.Owner:\Tname of the application which currently owns the global clipboard.
+Help.Main.Protocol:This field contains details of the how the global clipboard is operating.
+
+Help.IconBarMenu.00:\Rto see information about Clipper and visit its website.
+Help.IconBarMenu.01:\Sread the Clipper documentation.
+Help.IconBarMenu.02:\Squit Clipper.
