@@ -182,7 +182,7 @@ Updated by Stephen Fryatt
 Updated by Stephen Fryatt
 
 <list>
-<li><cite>IcnClipBrd</cite> module removed from </cite>Clipper</cite>, and supplied separately to simplify future updates.
+<li><cite>IcnClipBrd</cite> module removed from <cite>Clipper</cite>, and supplied separately to simplify future updates.
 </list>
 
 
@@ -203,9 +203,10 @@ Updated by Stephen Fryatt
 
 <list>
 <li>Renamed from <cite>Clipboard</cite> to <cite>Clipper</cite> to avoid an allocation clash.
-<li>Removed TAL icon from <window>program information</window> window to avoid adding un-allocated sprite name to Wimp Sprite Pool.
+<li>Removed TAL icon from <window>program information</window> window to avoid adding an un-allocated sprite name to Wimp Sprite Pool.
 <li>Add support for Interactive Help throughout the application.
-<li>Extensive code refactoring, including use of WimpLib for common tasks.
+<li>Extensive code refactoring, including the use of WimpLib for common tasks.
+<li>Fix Data Transfer Protocol implementation, including several missing DataLoadAck messages.
 </list>
 
 </chapter>
