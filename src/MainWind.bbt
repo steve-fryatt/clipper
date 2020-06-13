@@ -166,7 +166,7 @@ q%!0 = MainWindHandle%
 SYS "Wimp_GetWindowState",, q%
 
 IF q%!32 AND (1 << 16) THEN
-	q%!8 -= 128
+	q%!8 -= 408
 	q%!28 = -1
 	SYS "Wimp_OpenWindow",, q%
 ENDIF
