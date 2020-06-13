@@ -72,16 +72,15 @@ ENDPROC
 
 REM Toggle the state of the main window, opening it if it
 REM is closed, or closing it if it is open.
+REM
+REM \param x%		The X coordinate for the centre of the window.
+REM \param y%		The Y coordinate for the centre of the window.
 :
-DEF PROCmain_window_toggle
-!q% = MainWindHandle%
-SYS "Wimp_GetWindowState",,q%
-
-IF q%!32 AND (1<<17) THEN
-	SYS "Wimp_CloseWindow",,q%
+DEF PROCmain_window_toggle(x%, y%)
+IF FNwindow_is_open(MainWindHandle%) THEN
+	PROCwindow_close(MainWindHandle%)
 ELSE
-	q%!28 = -1
-	SYS "Wimp_OpenWindow",,q%
+	PROCwindow_open_centred_at(MainWindHandle%, x%, y%)
 	PROCicon_put_caret_at_end(MainWindHandle%, MainWindFileNameIcon%)
 ENDIF
 ENDPROC

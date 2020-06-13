@@ -91,7 +91,7 @@ WHEN -2
 	IF pointer%!8 = 2 THEN
 		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
 	ELSE
-		PROCmain_window_toggle
+		PROCmain_window_toggle(pointer%!0, pointer%!4)
 		PROCclipboard_examine
 	ENDIF
 
