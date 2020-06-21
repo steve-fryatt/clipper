@@ -175,11 +175,14 @@ DIM b% 1024, q% 256, a% 255
 
 REM Locate the application resources.
 
-resources$ = FNresources_find_territory_folder("<Clipper$Dir>.Resources")
+PROCresources_initialise_paths("<Clipper$Dir>.Resources", "UK", "Clipper$Language")
 
 REM Load the messages file.
 
-PROCmessage_initialise(resources$ + "Messages")
+resources$ = FNresources_find_file("Messages", &FFF)
+IF resources$ = "" THEN ERROR 255, "Unable to find Messages file"
+
+PROCmessage_initialise(resources$)
 
 TaskName$ = FNmessage_lookup("TaskName")
 TaskSprite$ = FNmessage_lookup("TaskSpr")
@@ -201,7 +204,10 @@ q%!40 = 0
 
 SYS "Wimp_Initialise", 310, &4B534154, TaskName$, q% TO ,ClipperTaskHandle%
 
-PROCtemplate_open(resources$ + "Templates")
+resources$ = FNresources_find_file("Templates", &FEC)
+IF resources$ = "" THEN ERROR 255, "Unable to find Templates file"
+
+PROCtemplate_open(resources$)
 PROCinfo_wind_initialise
 PROCmain_wind_initialise
 PROCtemplate_close
@@ -219,10 +225,13 @@ SYS "Wimp_CreateIcon",,b%
 
 REM Initialise and load the menu templates
 
+resources$ = FNresources_find_file("Menus", &FFD)
+IF resources$ = "" THEN ERROR 255, "Unable to find Menus file"
+
 PROCmenu_initialise
 
 b%!0 = InfoWindHandle%
-PROCmenu_load_templates(resources$ + "Menus", b%)
+PROCmenu_load_templates(resources$, b%)
 IconbarMenu% = b%!0
 
 REM Initialise the clipboard monitor.
