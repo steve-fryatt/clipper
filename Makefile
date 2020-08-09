@@ -28,6 +28,9 @@ ARCHIVE := clipper
 
 APP := !Clipper
 
+PACKAGE := Clipper
+PACKAGELOC := Desktop
+
 SRCS := Clipper.bbt	\
 	Clipboard.bbt	\
 	IHelp.bbt	\
