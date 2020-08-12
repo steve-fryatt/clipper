@@ -1,0 +1,85 @@
+REM >Mem
+REM
+REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM
+REM This file is part of Clipper:
+REM
+REM   http://www.stevefryatt.org.uk/software/
+REM
+REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM You may not use this work except in compliance with the
+REM Licence.
+REM
+REM You may obtain a copy of the Licence at:
+REM
+REM   http://joinup.ec.europa.eu/software/page/eupl
+REM
+REM Unless required by applicable law or agreed to in
+REM writing, software distributed under the Licence is
+REM distributed on an "AS IS" basis, WITHOUT WARRANTIES
+REM OR CONDITIONS OF ANY KIND, either express or implied.
+REM
+REM See the Licence for the specific language governing
+REM permissions and limitations under the Licence.
+
+REM Wimpslot Memory Allocation
+REM
+REM One interface is provided: a shared block which can be claimed
+REM as required if currently unused.
+
+REM Initialise the WimpSlot memory allocation routines.
+:
+DEF PROCmem_initialise
+LOCAL new_slot_size%
+
+MemSharedInUse% = FALSE
+
+REM Get the current WimpSlot size.
+
+SYS "Wimp_SlotSize", -1, -1 TO MemBaseSlotSize%
+ENDPROC
+
+
+REM Claim the block of shared memory from the WimpSlot. If the memory is
+REM currently in use by another claimant, the call will fail.
+REM
+REM \param size%		The number of bytes of memory required.
+REM \return			Pointer to the block of memory, or 0 on failure.
+:
+DEF FNmem_claim(size%)
+LOCAL new_slot_size%
+
+IF MemSharedInUse% THEN =0
+MemSharedInUse% = TRUE
+
+SYS "Wimp_SlotSize", MemBaseSlotSize% + size%, -1 TO new_slot_size%
+IF new_slot_size% < MemBaseSlotSize% + size% THEN =0
+=HIMEM
+
+
+REM Extend the block of shared memory previously claimed from the WimpSlot via
+REM FNmem_claim(). If the slot has not previously been claimed, the call will
+REM fail.
+REM
+REM \param size%		The new number of bytes required.
+REM \return			Pointer to the block of memory, or 0 on failure.
+:
+DEF FNmem_extend(size%)
+LOCAL current_slot_size%, new_slot_size%
+
+IF NOT MemSharedInUse% THEN =0
+
+SYS "Wimp_SlotSize", -1, -1 TO current_slot_size%
+IF current_slot_size% >= MemBaseSlotSize% + size% THEN =HIMEM
+
+SYS "Wimp_SlotSize", MemBaseSlotSize% + size%, -1 TO new_slot_size%
+IF new_slot_size% < MemBaseSlotSize% + size% THEN =0
+=HIMEM
+
+
+REM Release the block of memory from the WimpSlot.
+:
+DEF PROCmem_release
+SYS "Wimp_SlotSize", MemBaseSlotSize%, -1
+MemSharedInUse% = FALSE
+ENDPROC

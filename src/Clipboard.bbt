@@ -26,6 +26,8 @@ REM permissions and limitations under the Licence.
 REM Initialise the state of the clipboard monitor.
 :
 DEF PROCclipboard_initialise
+REM The maximum number of characters to type to the caret.
+ClipboardMaxTypeLen% = 1024
 
 REM An internal handle used to identify protocol errors.
 ClipboardInternalHandle% = -&11223344
@@ -53,6 +55,9 @@ ClipboardRequestMyRef% = -1
 
 REM The last MyRef of the drag save operation.
 ClipboardDragSaveMyRef% = -1
+
+REM The last MyRef of the type data operation.
+ClipboardTypeDataMyRef% = -1
 
 REM The MyRef used by the drag save source task in its DataLoad message.
 ClipboardSaveSourceRef% = -1
@@ -234,14 +239,15 @@ DEF PROCclipboard_message_data_save(message%)
 LOCAL receiver_handle%
 
 CASE message%!12 OF
-WHEN ClipboardDragSaveMyRef%
+WHEN ClipboardDragSaveMyRef%, ClipboardTypeDataMyRef%
 	message%!0 = (LEN(ClipboardSavePath$) + 48) AND &FC
 	message%!12 = message%!8
 	message%!16 = 2 : REM Message_DataSaveAck
 	$(message% + 44) = ClipboardSavePath$ + CHR$(0)
 	SYS "Wimp_SendMessage", 17, message%, message%!4 TO ,,receiver_handle%
 
-	ClipboardDragSaveMyRef% = message%!8
+	IF ClipboardDragSaveMyRef% <> -1 THEN ClipboardDragSaveMyRef% = message%!8
+	IF ClipboardTypeDataMyRef% <> -1 THEN ClipboardTypeDataMyRef% = message%!8
 	ClipboardSavePath$ = ""
 	PROCmain_wind_set_proto_handle_message("SendAck", receiver_handle%)
 
@@ -353,7 +359,7 @@ REM \param filename$	The filename to which to save the file.
 REM \param message%	The block in which to build the message.
 REM \param use_message%	Treat the message block as being the data from
 REM			an earlier Message_DataSaveAck.
-
+:
 DEF PROCclipboard_save_data(filename$, message%, use_message%)
 LOCAL message$, receiver_handle%
 
@@ -391,6 +397,41 @@ message%!36 = 4
 message%!40 = -1
 SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask% TO ,,receiver_handle%
 ClipboardDragSaveMyRef% = message%!8
+PROCmain_wind_set_proto_handle_message("AskToSave", receiver_handle%)
+ENDPROC
+
+
+REM Initialise the typing of the clipboard contents to the caret, which
+REM will either be carried out immediately if we own the clipboard, or
+REM by sending a Message_DataRequest to the owner if we don't..
+:
+DEF PROCclipboard_type_data
+LOCAL message$, receiver_handle%
+
+REM If we own the clipboard, we can just type the file now.
+
+IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN
+	PROCclipboard_type_file(ClipboardCurrentFile$)
+	ENDPROC
+ENDIF
+
+REM Otherwise, we need to send a Message_DataRequest to the clipboard
+REM owner to request the clipboard data.
+
+ClipboardSavePath$ = "<Wimp$Scrap>"
+
+b%!0 = 44
+b%!12 = 0
+b%!16 = &10 : REM Message_DataRequest
+b%!20 = -3
+b%!24 = ClipboardInternalHandle%
+b%!28 = 640
+b%!32 = 512
+b%!36 = 4
+b%!40 = &FFF : REM We want text for the typing.
+b%!44 = -1
+SYS "Wimp_SendMessage", 18, b%, ClipboardCurrentOwnerTask% TO ,,receiver_handle%
+ClipboardTypeDataMyRef% = b%!8
 PROCmain_wind_set_proto_handle_message("AskToSave", receiver_handle%)
 ENDPROC
 
@@ -434,12 +475,29 @@ WHEN ClipboardDragSaveMyRef%
 
 		PROCmain_wind_set_proto_handle_message("Accepted", message%!4)
 
+		PROCclipboard_type_file()
+
 		message%!12 = message%!8
+		message%!16 = 4 : REM Message_DataSaveAck
 		SYS "Wimp_SendMessage", 17, message%, message%!4
 
 		ClipboardDragSaveMyRef% = -1 
 		ClipboardSaveDestinationTask% = -1
 	ENDIF
+
+WHEN ClipboardTypeDataMyRef%
+	REM The task that owns the clipboard has returned a Message_DataLoad
+	REM to us as part of a "type to caret" operation.
+
+	PROCmain_wind_set_proto_handle_message("Accepted", message%!4)
+
+	PROCclipboard_type_file(FNstring_read(message% + 44))
+
+	message%!12 = message%!8
+	message%!16 = 4 : REM Message_DataSaveAck
+	SYS "Wimp_SendMessage", 17, message%, message%!4
+
+	ClipboardTypeDataMyRef% = -1
 
 WHEN 0
 	REM The filer is asking us to load a file.
@@ -530,9 +588,9 @@ REM \param message%	Pointer to the Wimp_Poll data block.
 :
 DEF PROCclipboard_message_bounce(message%)
 CASE message%!8 OF
-WHEN ClipboardDragSaveMyRef%
-	REM A message which was part of an attempt to save the clipboard
-	REM bounced.
+WHEN ClipboardDragSaveMyRef%, ClipboardTypeDataMyRef%
+	REM A message which was part of an attempt to save or type
+	REM the clipboard bounced.
 
 	IF message%!16 = 1 THEN
 		PROCmain_wind_set_proto_handle_message("NoInterest", ClipboardSaveDestinationTask%)
@@ -546,6 +604,7 @@ WHEN ClipboardDragSaveMyRef%
 	ClipboardSavePath$ = ""
 	ClipboardSaveSourceRef% = -1
 	ClipboardSaveDestMyRef% = -1
+	ClipboardTypeDataMyRef% = -1
 
 WHEN ClipboardExamineMyRef%
 	REM A message sent to examine the clipboard bounced.
@@ -584,4 +643,67 @@ LOCAL error%, flags%
 
 SYS "XOS_FSControl", 26, source$, destination$, %10 TO error% ;flags%
 IF flags% AND 1 THEN SYS "Wimp_ReportError", error%, &501, TaskName$, TaskSprite$, 1, 0
+ENDPROC
+
+
+REM Type the contents of a file to the caret.
+REM
+REM \param file$	The file to be typed.
+:
+DEF PROCclipboard_type_file(file$)
+LOCAL text%, size%, handle%, end%, flags%, properties%, c%, message$
+
+SYS "Territory_CharacterPropertyTable", -1, 0 TO properties%
+
+REM Open the file to be typed.
+
+handle% = OPENIN(file$)
+IF handle% = 0 THEN
+	message$ = FNmessage_lookup("BadClipFileErr")
+	PROCwimperror_report(message$, 2, %10, "")
+	ENDPROC
+ENDIF
+
+REM Read the file size, and claim enough memory to hold it.
+
+size% = EXT#handle%
+IF size% > ClipboardMaxTypeLen% THEN size% = ClipboardMaxTypeLen%
+
+text% = FNmem_claim(size% + 1)
+IF text% = 0 THEN
+	CLOSE#handle%
+	message$ = FNmessage_lookup("NoMemErr")
+	PROCwimperror_report(message$, 2, %10, "")
+	ENDPROC
+ENDIF
+
+REM Load the file into the buffer, and terminate the text.
+
+SYS "XOS_GBPB", 4, handle%, text%, size% TO ,,end% ;flags%
+
+CLOSE#handle%
+
+IF (flags% AND 1) <> 0 THEN
+	PROCmem_release
+	message$ = FNmessage_lookup("BadClipFileErr")
+	PROCwimperror_report(message$, 2, %10, "")
+	ENDPROC
+ENDIF
+
+REM Terminate the buffer.
+
+?end% = 13
+
+REM Type the characters in the buffer.
+
+WHILE ?text% <> 13
+	c% = ?text%
+	text% += 1
+
+	IF (properties%?(c% DIV 8) AND (1 << (c% MOD 8))) = 0 THEN SYS "XWimp_ProcessKey", c%
+ENDWHILE
+
+REM Release the memory buffer.
+
+PROCmem_release
 ENDPROC
