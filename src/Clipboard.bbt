@@ -420,7 +420,7 @@ REM owner to request the clipboard data.
 
 ClipboardSavePath$ = "<Wimp$Scrap>"
 
-b%!0 = 44
+b%!0 = 48
 b%!12 = 0
 b%!16 = &10 : REM Message_DataRequest
 b%!20 = -3
