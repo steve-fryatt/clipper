@@ -228,6 +228,7 @@ Updated by Stephen Fryatt
 
 <list>
 <li><mouse>Adjust</mouse>-clicks on the iconbar icon type the clipboard contents at the caret.
+<li>Provide better support for applications which don&rsquo;t respond well to requests for the clipboard contents.
 <li>Use ResConf-style system variables to identify resources.
 </list>
 
