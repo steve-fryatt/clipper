@@ -384,7 +384,7 @@ REM owner to request the clipboard data.
 
 ClipboardSavePath$ = filename$
 
-message%!0 = 44
+message%!0 = 48
 message%!12 = 0
 message%!16 = &10 : REM Message_DataRequest
 IF NOT use_message% THEN
@@ -394,7 +394,8 @@ IF NOT use_message% THEN
 	message%!32 = 512
 ENDIF
 message%!36 = 4
-message%!40 = -1
+message%!40 = ClipboardCurrentType%
+message%!44 = -1
 SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask% TO ,,receiver_handle%
 ClipboardDragSaveMyRef% = message%!8
 PROCmain_wind_set_proto_handle_message("AskToSave", receiver_handle%)
