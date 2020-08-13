@@ -90,7 +90,7 @@ IF message%!4 <> ClipperTaskHandle% THEN
 	ClipboardCurrentOwnerTask% = -1
 	ClipboardCurrentType% = -1
 	ClipboardCurrentFile$ = ""
-	PROCclipboard_examine
+	PROCclipboard_examine(-1)
 ENDIF
 ENDPROC
 
@@ -109,7 +109,7 @@ IF message%!4 <> ClipboardCurrentOwnerTask% THEN ENDPROC
 ClipboardCurrentOwnerTask% = -1
 ClipboardCurrentType% = -1
 ClipboardCurrentFile$ = ""
-PROCclipboard_examine
+PROCclipboard_examine(-1)
 ENDPROC
 
 
@@ -118,20 +118,27 @@ REM owner and the content.
 REM
 REM A Message_DataRequest is broadcast, which will result in a
 REM Message_DataSave being sent back.
+REM
+REM \param type%	A type to request, or -1 for "any".
 :
-DEF PROCclipboard_examine
+DEF PROCclipboard_examine(type%)
 REM There's no point doing anything if we own the clipboard.
 IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN ENDPROC
 
+REM Any invalid type is mapped to "don't care".
+
+IF (type% > &FFF) OR (type% < -1) THEN type% = -1
+
 REM Send a Message_DataRequest to whoever currently owns the clipboard.
 
-q%!0 = 44
+IF type% = -1 THEN q%!0 = 44 ELSE q%!0 = 48
 q%!12 = 0
 q%!16 = &10			: REM Message_DataRequest
 q%!20 = MainWindHandle%
 q%!24 = ClipboardInternalHandle%
 q%!36 = %100			: REM Flags: Send Clipboard
-q%!40 = -1			: REM No preferred type: send native format.
+q%!40 = type%
+q%!44 = -1			: REM If type% isn't -1, terminate the list.
 SYS "Wimp_SendMessage", 18, q%, 0
 
 REM Clipboard Examine Step 1 -- Send Message_DataRequest
@@ -614,7 +621,7 @@ WHEN ClipboardExamineMyRef%
 
 	ClipboardExamineMyRef% = -1
 
-	REM If the message Message_DataRequest, clear the current clipboard data.
+	REM If the message was Message_DataRequest, clear the current clipboard data.
 
 	IF message%!16 = &10 THEN
 		ClipboardCurrentOwnerTask% = -1

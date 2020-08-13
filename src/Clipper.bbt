@@ -96,7 +96,7 @@ WHEN -2
 		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
 	WHEN 4
 		PROCmain_window_toggle(pointer%!0, pointer%!4)
-		PROCclipboard_examine
+		PROCclipboard_examine(-1)
 	ENDCASE
 
 WHEN MainWindHandle%
@@ -245,5 +245,5 @@ PROCmem_initialise
 REM Initialise the clipboard monitor.
 
 PROCclipboard_initialise
-PROCclipboard_examine
+PROCclipboard_examine(-1)
 ENDPROC
