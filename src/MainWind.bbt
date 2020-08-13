@@ -81,7 +81,7 @@ IF FNwindow_is_open(MainWindHandle%) THEN
 	PROCwindow_close(MainWindHandle%)
 ELSE
 	PROCwindow_open_centred_at(MainWindHandle%, x%, y%)
-	PROCicon_put_caret_at_end(MainWindHandle%, MainWindFileNameIcon%)
+	IF NOT FNicon_shaded(MainWindHandle%, MainWindFileNameIcon%) THEN PROCicon_put_caret_at_end(MainWindHandle%, MainWindFileNameIcon%)
 ENDIF
 ENDPROC
 
@@ -100,9 +100,11 @@ REM \param taskhandle$	The handle of the task owning the content.
 REM \param filetype%	The filetype of the content, or -1 for none.
 :
 DEF PROCmain_wind_set_content(filename$, taskhandle%, filetype%)
-LOCAL sprite$, validation%
+LOCAL sprite$, validation%, name$
 
-PROCicon_set_indirected_text(MainWindHandle%, MainWindFileNameIcon%, filename$)
+IF filename$ = "" THEN name$ = FNmessage_lookup("NoName") ELSE name$ = filename$
+
+PROCicon_set_indirected_text(MainWindHandle%, MainWindFileNameIcon%, name$)
 PROCicon_set_indirected_text(MainWindHandle%, MainWindOwnerIcon%, FNmain_wind_task_name_from_handle(taskhandle%))
 PROCicon_set_indirected_text(MainWindHandle%, MainWindFileTypeIcon%, FNtypes_name_from_type(filetype%))
 
@@ -111,12 +113,18 @@ validation% = FNicon_validation(MainWindHandle%, MainWindFileSprIcon%)
 IF validation% <> 0 THEN $validation% = "S" + sprite$ + ";R2;NIcon"
 
 SYS "Wimp_GetCaretPosition",,q%
-IF q%!0 = MainWindHandle% THEN PROCicon_put_caret(q%!0, q%!4, q%!20)
+IF q%!0 = MainWindHandle% THEN
+	IF filename$ = "" THEN
+		PROCicon_put_caret(q%!0, -1, 0)
+	ELSE
+		PROCicon_put_caret(q%!0, q%!4, q%!20)
+	ENDIF
+ENDIF
 
-PROCicon_set_shaded(MainWindHandle%, MainWindFileNameIcon%, FALSE)
-PROCicon_set_shaded(MainWindHandle%, MainWindFileSprIcon%, FALSE)
-PROCicon_set_shaded(MainWindHandle%, MainWindOKIcon%, FALSE)
-PROCicon_set_shaded(MainWindHandle%, MainWindOwnerIcon%, filetype% = -1)
+PROCicon_set_shaded(MainWindHandle%, MainWindFileNameIcon%, filename$ = "")
+PROCicon_set_shaded(MainWindHandle%, MainWindFileSprIcon%, filename$ = "")
+PROCicon_set_shaded(MainWindHandle%, MainWindOKIcon%, filename$ = "")
+PROCicon_set_shaded(MainWindHandle%, MainWindOwnerIcon%, taskhandle% = -1)
 PROCicon_set_shaded(MainWindHandle%, MainWindFileTypeIcon%, filetype% = -1)
 ENDPROC
 

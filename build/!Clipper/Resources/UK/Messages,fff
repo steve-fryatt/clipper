@@ -31,6 +31,8 @@ BadClipFileErr:The clipboard file was not found, or was an invalid object.
 DragSave:To save, drag the file icon to a directory viewer.
 NoMemErr:Unable to claim memory to process clipboard contents.
 
+NoName:None
+
 # Protocol Messages
 
 SearchOwner:Looking for owner...

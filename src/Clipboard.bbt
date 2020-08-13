@@ -265,7 +265,7 @@ WHEN ClipboardExamineMyRef%
 
 	ClipboardCurrentOwnerTask% = message%!4
 	ClipboardCurrentType% = message%!40
-	PROCmain_wind_set_content(FNstring_read(message%+44), message%!4, ClipboardCurrentType%)
+	PROCmain_wind_set_content(FNstring_read(message%+44), ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
 
 	ClipboardExamineMyRef% = -1
 
@@ -527,7 +527,7 @@ WHEN 0
 
 	REM Update the display.
 
-	PROCmain_wind_set_content(ClipboardCurrentFile$, ClipperTaskHandle%, ClipboardCurrentType%)
+	PROCmain_wind_set_content(ClipboardCurrentFile$, ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
 
 	PROCmain_wind_reset_proto
 	PROCmain_wind_set_proto_message("ItsOurs")
@@ -619,7 +619,7 @@ WHEN ClipboardExamineMyRef%
 		ClipboardCurrentOwnerTask% = -1
 		ClipboardCurrentType% = -1
 
-		PROCmain_wind_set_content("None", -1, ClipboardCurrentType%)
+		PROCmain_wind_set_content("", ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
 		PROCmain_wind_set_proto_message("NoClipboard")
 	ENDIF
 
