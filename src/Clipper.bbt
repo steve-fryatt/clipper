@@ -97,7 +97,7 @@ WHEN -2
 	WHEN 4
 		PROCmain_window_toggle(pointer%!0, pointer%!4)
 		PROCclipboard_examine
-	ENDIF
+	ENDCASE
 
 WHEN MainWindHandle%
 	IF pointer%!8 = 2 THEN
