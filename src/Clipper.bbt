@@ -36,6 +36,7 @@ LIBRARY "src/Clipboard.bbt"
 LIBRARY "src/IHelp.bbt"
 LIBRARY "src/InfoWind.bbt"
 LIBRARY "src/MainWind.bbt"
+LIBRARY "src/Mem.bbt"
 LIBRARY "src/Types.bbt"
 
 REM Set up the basic error handling, then initialise.
@@ -88,12 +89,15 @@ REM \param pointer%	Pointer to the Wimp_Poll block.
 DEF PROCclipper_mouse_click(pointer%)
 CASE pointer%!12 OF
 WHEN -2
-	IF pointer%!8 = 2 THEN
+	CASE pointer%!8 OF
+	WHEN 1
+		PROCclipboard_type_data
+	WHEN 2
 		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
-	ELSE
+	WHEN 4
 		PROCmain_window_toggle(pointer%!0, pointer%!4)
 		PROCclipboard_examine
-	ENDIF
+	ENDCASE
 
 WHEN MainWindHandle%
 	IF pointer%!8 = 2 THEN
@@ -233,6 +237,10 @@ PROCmenu_initialise
 b%!0 = InfoWindHandle%
 PROCmenu_load_templates(resources$, b%)
 IconbarMenu% = b%!0
+
+REM Initialise the shared memory.
+
+PROCmem_initialise
 
 REM Initialise the clipboard monitor.
 

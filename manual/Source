@@ -42,7 +42,7 @@ The necessary libraries and build tools can be found at <link ref="#url http://w
 
 The global clipboard provides a way of transferring data between applications. You select the data in one application and cut or copy it onto the clipboard (usually using <key>Ctrl-X</key> and <key>Ctrl-C</key>). You then move to the other application and paste the data from the clipboard (usually <key>Ctrl-V</key>).
 
-<cite>Clipper</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipper</cite> to put that file on the clipboard.
+<cite>Clipper</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipper</cite> to put that file on the clipboard, and type the clipboard contents to the caret.
 
 The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipper</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/software/clipboard/">http://www.stevefryatt.org.uk/software/clipboard/</link>.
 
@@ -64,9 +64,11 @@ To use <cite>Clipper</cite>, simply run it from a Filer window. If you always wa
 
 <chapter title="Using Clipper" file="Use">
 
-Once <cite>Clipper</cite> is loaded, it will install an icon on the icon bar. Click <mouse>select</mouse> on this icon to open the <window>Save clipboard</window> window. If there is anything on the clipboard then you will be able to drag the icon to a directory or to another application to save the clipboard. You can put a file onto the clipboard by dragging it to this window.
+Once <cite>Clipper</cite> is loaded, it will install an icon on the iconbar. Click <mouse>select</mouse> on this icon to open the <window>Save clipboard</window> window. If there is anything on the clipboard then you will be able to drag the icon to a directory or to another application to save the clipboard. You can put a file onto the clipboard by dragging it to this window.
 
 If you toggle the window size then you can see an extra box which indicates what <cite>Clipper</cite> is doing. This may be helpful for programmers trying to work out why their program doesn&rsquo;t work with <cite>Clipper</cite>. Note that the problem may well be <cite>Clipper</cite>&rsquo;s fault!
+
+If there is text on the clipboard, an <mouse>adjust</mouse> click on the iconbar icon will type it at the caret.
 
 </chapter>
 
@@ -219,6 +221,14 @@ Updated by Stephen Fryatt
 <li>Extensive code refactoring, including the use of WimpLib for common tasks.
 <li>Fix Data Transfer Protocol implementation, including several missing DataLoadAck messages.
 <li>Watch for the application owning the clipboard quitting (ticket&nbsp;#712).
+</list>
+
+
+<subhead title="Test Build">
+
+<list>
+<li><mouse>Adjust</mouse>-clicks on the iconbar icon type the clipboard contents at the caret.
+<li>Use ResConf-style system variables to identify resources.
 </list>
 
 </chapter>

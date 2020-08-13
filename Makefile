@@ -36,6 +36,7 @@ SRCS := Clipper.bbt	\
 	IHelp.bbt	\
 	InfoWind.bbt	\
 	MainWind.bbt	\
+	Mem.bbt		\
 	Types.bbt
 
 include $(SFTOOLS_MAKE)/Basic
