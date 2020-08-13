@@ -631,6 +631,13 @@ WHEN ClipboardExamineMyRef%
 		PROCmain_wind_set_proto_message("NoClipboard")
 	ENDIF
 
+	REM If the original message was for the "native" type, resend it as a
+	REM request for plain text. This is a bodge, to get around the fact that
+	REM some applications (notably RISC OS 5's Clipboard Manager) don't
+	REM even ack a Message_DataRequest with a null type list.
+
+	IF message%!40 = -1 THEN PROCclipboard_examine(&FFF)
+
 WHEN ClipboardRequestMyRef%
 	REM Attempting to send the clipboard data to another
 	REM task resulted in a missing ack to one of our messages.
