@@ -141,9 +141,13 @@ q%!40 = type%
 q%!44 = -1			: REM If type% isn't -1, terminate the list.
 SYS "Wimp_SendMessage", 18, q%, 0
 
-REM Clipboard Examine Step 1 -- Send Message_DataRequest
-
 ClipboardExamineMyRef% = q%!8
+
+REM If this is a default type request, enable NULL polls so that
+REM we get a call after the message exchange has finished in the event
+REM that we get neither a Message_DataSave or a bounce back.
+
+IF type% = -1 THEN ClipperAcceptNullPolls% = TRUE
 
 PROCmain_wind_reset_proto
 PROCmain_wind_set_proto_message("SearchOwner")
@@ -274,6 +278,7 @@ WHEN ClipboardExamineMyRef%
 	ClipboardCurrentType% = message%!40
 	PROCmain_wind_set_content(FNstring_read(message%+44), ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
 
+	ClipperAcceptNullPolls% = FALSE
 	ClipboardExamineMyRef% = -1
 
 WHEN 0
@@ -620,6 +625,7 @@ WHEN ClipboardExamineMyRef%
 	REM Clipboard Examine Bounced
 
 	ClipboardExamineMyRef% = -1
+	ClipperAcceptNullPolls% = FALSE
 
 	REM If the message was Message_DataRequest, clear the current clipboard data.
 
@@ -645,6 +651,35 @@ WHEN ClipboardRequestMyRef%
 	PROCmain_wind_set_proto_error("RecDied")
 	ClipboardRequestMyRef% = -1
 ENDCASE
+ENDPROC
+
+
+REM Handle Null Events from the Wimp, which are enabled when we're enquiring
+REM for a clipboard owner. If we receive one, then the Message_DataRequest
+REM was ackd to the Wimp, but not sent back to us.
+:
+DEF PROCclipboard_null_event
+
+REM Disable NULL events.
+
+ClipperAcceptNullPolls% = FALSE
+
+REM If this was an examine echange, then the clipboard owner must be an application
+REM (such as Ovation Pro) which acks the message but doesn't respond with a
+REM Message_DataSave when it receives a "native" type request. We then resend
+REM the request specifying plain text.
+
+IF ClipboardExamineMyRef% <> -1 THEN
+	ClipboardExamineMyRef% = -1
+
+	ClipboardCurrentOwnerTask% = -1
+	ClipboardCurrentType% = -1
+
+	PROCmain_wind_set_content("", ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
+	PROCmain_wind_set_proto_message("NoClipboard")
+
+	PROCclipboard_examine(&FFF)
+ENDIF
 ENDPROC
 
 

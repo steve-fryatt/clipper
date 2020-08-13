@@ -48,6 +48,10 @@ ClipperTaskHandle% = -1
 
 PROCclipper_initialise
 
+REM Set TRUE to enable Null Poll events.
+
+ClipperAcceptNullPolls% = FALSE
+
 REM Poll the Wimp until exit.
 
 Quit%=FALSE
@@ -65,11 +69,14 @@ END
 REM Handle calls to Wimp_Poll and process the responses.
 :
 DEF PROCclipper_poll
-LOCAL reason%
+LOCAL reason%, mask%
 
-SYS "Wimp_Poll", %110001, b% TO reason%
+IF NOT ClipperAcceptNullPolls% THEN mask% = %1
+
+SYS "Wimp_Poll", %110001 AND mask%, b% TO reason%
 
 CASE reason% OF
+	WHEN 0:		PROCclipboard_null_event
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
 	WHEN 6:		PROCclipper_mouse_click(b%)
