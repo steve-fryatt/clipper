@@ -411,7 +411,7 @@ LOCAL message$, receiver_handle%
 REM If we own the clipboard, we can just type the file now.
 
 IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN
-	PROCclipboard_type_file(ClipboardCurrentFile$)
+	IF ClipboardCurrentType% = &FFF THEN PROCclipboard_type_file(ClipboardCurrentFile$)
 	ENDPROC
 ENDIF
 
