@@ -23,14 +23,27 @@ REM See the Licence for the specific language governing
 REM permissions and limitations under the Licence.
 
 
-REM Find a file icon sprite for a numeric filetype.
+REM Find a file icon sprite for a numeric filetype, falling back
+REM to file_xxx if a suitable sprite isn't available.
 REM
 REM \param filetype%	The filetype to look up.
 REM \return		The sprite name, in the Wimp pool.
 :
 DEF FNtypes_sprite_from_type(filetype%)
+LOCAL sprite$, flags%
+
+REM Discard out of bounds types immediately.
+
 IF filetype% < 0 OR filetype% > &FFF THEN = "file_xxx"
-="file_" + RIGHT$("000" + STR$~(filetype%), 3)
+
+REM Try the type's sprite, and fall back if it doesn't exist.
+
+sprite$ = "file_" + RIGHT$("000" + STR$~(filetype%), 3)
+
+SYS "XWimp_SpriteOp", 40,,sprite$ TO ;flags%
+IF flags% AND 1 THEN sprite$ = "file_xxx"
+
+=sprite$
 
 
 REM Find the textual name of a filetype from its numeric value.
