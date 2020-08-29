@@ -211,7 +211,7 @@ Updated by Stephen Fryatt
 
 <subhead title="Version 0.20 (13 June 2020)">
 
-Updated by Stephen Fryatt
+Second beta release.
 
 <list>
 <li>Renamed from <cite>Clipboard</cite> to <cite>Clipper</cite> to avoid an allocation clash.
@@ -224,12 +224,16 @@ Updated by Stephen Fryatt
 </list>
 
 
-<subhead title="Test Build">
+<subhead title="Version 0.30 (29 August 2020)">
+
+Third beta release.
 
 <list>
-<li><mouse>Adjust</mouse>-clicks on the iconbar icon type the clipboard contents at the caret.
-<li>Provide better support for applications which don&rsquo;t respond well to requests for the clipboard contents.
+<li>Licence updated to EUPL&nbsp;v1.2.</li>
+<li><mouse>Adjust</mouse>-clicks on the iconbar icon type the clipboard contents at the caret (ticket&nbsp;#725).
+<li>Provide better support for applications which don&rsquo;t respond well to requests for the clipboard contents (tickets&nbsp;#714 and #715).
 <li>Use ResConf-style system variables to identify resources.
+<li>Fall back to the unknown file icon when the Wimp pool doesn&rsquo;t contain a suitable icon for the clipboard contents (ticket&nbsp;#713).
 </list>
 
 </chapter>
