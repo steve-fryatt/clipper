@@ -6,7 +6,7 @@ REM This file is part of Clipper:
 REM
 REM   http://www.stevefryatt.org.uk/software/
 REM
-REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM Licensed under the EUPL, Version 1.2 only (the "Licence");
 REM You may not use this work except in compliance with the
 REM Licence.
 REM
@@ -48,6 +48,10 @@ ClipperTaskHandle% = -1
 
 PROCclipper_initialise
 
+REM Set TRUE to enable Null Poll events.
+
+ClipperAcceptNullPolls% = FALSE
+
 REM Poll the Wimp until exit.
 
 Quit%=FALSE
@@ -65,11 +69,14 @@ END
 REM Handle calls to Wimp_Poll and process the responses.
 :
 DEF PROCclipper_poll
-LOCAL reason%
+LOCAL reason%, mask%
 
-SYS "Wimp_Poll", %110001, b% TO reason%
+IF NOT ClipperAcceptNullPolls% THEN mask% = %1
+
+SYS "Wimp_Poll", %110001 AND mask%, b% TO reason%
 
 CASE reason% OF
+	WHEN 0:		PROCclipboard_null_event
 	WHEN 2:		SYS "Wimp_OpenWindow",,b%
 	WHEN 3:		SYS "Wimp_CloseWindow",,b%
 	WHEN 6:		PROCclipper_mouse_click(b%)
@@ -96,7 +103,7 @@ WHEN -2
 		PROCmenu_create_iconbar(IconbarMenu%, pointer%!0)
 	WHEN 4
 		PROCmain_window_toggle(pointer%!0, pointer%!4)
-		PROCclipboard_examine
+		PROCclipboard_examine(-1)
 	ENDCASE
 
 WHEN MainWindHandle%
@@ -245,5 +252,5 @@ PROCmem_initialise
 REM Initialise the clipboard monitor.
 
 PROCclipboard_initialise
-PROCclipboard_examine
+PROCclipboard_examine(-1)
 ENDPROC

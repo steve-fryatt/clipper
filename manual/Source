@@ -1,6 +1,6 @@
 <document title="Crosses">
 <define name="version" value="1.10">
-<define name="date" value="6 December 2002" length=25 align="right">
+<define name="date" value="6 December 2002" length=20 align="right">
 
 
 
@@ -10,7 +10,7 @@
 =============================================================================
 Clipper - A Global Clipboard utility                             Version $$version$$
 
-(c) Thomas Leonard, 1999 (32-bit by Stephen Fryatt) $$date$$
+(c) Thomas Leonard, 1999-2004, Stephen Fryatt, 2004-2020 $$date$$
 =============================================================================
 
 </literal>
@@ -21,7 +21,7 @@ Clipper - A Global Clipboard utility                             Version $$versi
 
 <chapter title="License" file="License">
 
-<cite>Clipper</cite> is licensed under the EUPL, Version&nbsp;1.1 only (the &ldquo;Licence&rdquo;); you may not use this work except in compliance with the Licence.
+<cite>Clipper</cite> is licensed under the EUPL, Version&nbsp;1.2 only (the &ldquo;Licence&rdquo;); you may not use this work except in compliance with the Licence.
 
 You may obtain a copy of the Licence at <link ref="#url http://joinup.ec.europa.eu/software/page/eupl">http://joinup.ec.europa.eu/software/page/eupl</link>
 
@@ -228,6 +228,7 @@ Updated by Stephen Fryatt
 
 <list>
 <li><mouse>Adjust</mouse>-clicks on the iconbar icon type the clipboard contents at the caret.
+<li>Provide better support for applications which don&rsquo;t respond well to requests for the clipboard contents.
 <li>Use ResConf-style system variables to identify resources.
 </list>
 

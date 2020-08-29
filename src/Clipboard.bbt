@@ -6,7 +6,7 @@ REM This file is part of Clipper:
 REM
 REM   http://www.stevefryatt.org.uk/software/
 REM
-REM Licensed under the EUPL, Version 1.1 only (the "Licence");
+REM Licensed under the EUPL, Version 1.2 only (the "Licence");
 REM You may not use this work except in compliance with the
 REM Licence.
 REM
@@ -90,7 +90,7 @@ IF message%!4 <> ClipperTaskHandle% THEN
 	ClipboardCurrentOwnerTask% = -1
 	ClipboardCurrentType% = -1
 	ClipboardCurrentFile$ = ""
-	PROCclipboard_examine
+	PROCclipboard_examine(-1)
 ENDIF
 ENDPROC
 
@@ -109,7 +109,7 @@ IF message%!4 <> ClipboardCurrentOwnerTask% THEN ENDPROC
 ClipboardCurrentOwnerTask% = -1
 ClipboardCurrentType% = -1
 ClipboardCurrentFile$ = ""
-PROCclipboard_examine
+PROCclipboard_examine(-1)
 ENDPROC
 
 
@@ -118,25 +118,36 @@ REM owner and the content.
 REM
 REM A Message_DataRequest is broadcast, which will result in a
 REM Message_DataSave being sent back.
+REM
+REM \param type%	A type to request, or -1 for "any".
 :
-DEF PROCclipboard_examine
+DEF PROCclipboard_examine(type%)
 REM There's no point doing anything if we own the clipboard.
 IF ClipboardCurrentOwnerTask% = ClipperTaskHandle% THEN ENDPROC
 
+REM Any invalid type is mapped to "don't care".
+
+IF (type% > &FFF) OR (type% < -1) THEN type% = -1
+
 REM Send a Message_DataRequest to whoever currently owns the clipboard.
 
-q%!0 = 44
+IF type% = -1 THEN q%!0 = 44 ELSE q%!0 = 48
 q%!12 = 0
 q%!16 = &10			: REM Message_DataRequest
 q%!20 = MainWindHandle%
 q%!24 = ClipboardInternalHandle%
 q%!36 = %100			: REM Flags: Send Clipboard
-q%!40 = -1			: REM No preferred type: send native format.
+q%!40 = type%
+q%!44 = -1			: REM If type% isn't -1, terminate the list.
 SYS "Wimp_SendMessage", 18, q%, 0
 
-REM Clipboard Examine Step 1 -- Send Message_DataRequest
-
 ClipboardExamineMyRef% = q%!8
+
+REM If this is a default type request, enable NULL polls so that
+REM we get a call after the message exchange has finished in the event
+REM that we get neither a Message_DataSave or a bounce back.
+
+IF type% = -1 THEN ClipperAcceptNullPolls% = TRUE
 
 PROCmain_wind_reset_proto
 PROCmain_wind_set_proto_message("SearchOwner")
@@ -267,6 +278,7 @@ WHEN ClipboardExamineMyRef%
 	ClipboardCurrentType% = message%!40
 	PROCmain_wind_set_content(FNstring_read(message%+44), ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
 
+	ClipperAcceptNullPolls% = FALSE
 	ClipboardExamineMyRef% = -1
 
 WHEN 0
@@ -384,7 +396,7 @@ REM owner to request the clipboard data.
 
 ClipboardSavePath$ = filename$
 
-message%!0 = 44
+message%!0 = 48
 message%!12 = 0
 message%!16 = &10 : REM Message_DataRequest
 IF NOT use_message% THEN
@@ -394,7 +406,8 @@ IF NOT use_message% THEN
 	message%!32 = 512
 ENDIF
 message%!36 = 4
-message%!40 = -1
+message%!40 = ClipboardCurrentType%
+message%!44 = -1
 SYS "Wimp_SendMessage", 18, message%, ClipboardCurrentOwnerTask% TO ,,receiver_handle%
 ClipboardDragSaveMyRef% = message%!8
 PROCmain_wind_set_proto_handle_message("AskToSave", receiver_handle%)
@@ -612,8 +625,9 @@ WHEN ClipboardExamineMyRef%
 	REM Clipboard Examine Bounced
 
 	ClipboardExamineMyRef% = -1
+	ClipperAcceptNullPolls% = FALSE
 
-	REM If the message Message_DataRequest, clear the current clipboard data.
+	REM If the message was Message_DataRequest, clear the current clipboard data.
 
 	IF message%!16 = &10 THEN
 		ClipboardCurrentOwnerTask% = -1
@@ -623,6 +637,13 @@ WHEN ClipboardExamineMyRef%
 		PROCmain_wind_set_proto_message("NoClipboard")
 	ENDIF
 
+	REM If the original message was for the "native" type, resend it as a
+	REM request for plain text. This is a bodge, to get around the fact that
+	REM some applications (notably RISC OS 5's Clipboard Manager) don't
+	REM even ack a Message_DataRequest with a null type list.
+
+	IF message%!40 = -1 THEN PROCclipboard_examine(&FFF)
+
 WHEN ClipboardRequestMyRef%
 	REM Attempting to send the clipboard data to another
 	REM task resulted in a missing ack to one of our messages.
@@ -630,6 +651,35 @@ WHEN ClipboardRequestMyRef%
 	PROCmain_wind_set_proto_error("RecDied")
 	ClipboardRequestMyRef% = -1
 ENDCASE
+ENDPROC
+
+
+REM Handle Null Events from the Wimp, which are enabled when we're enquiring
+REM for a clipboard owner. If we receive one, then the Message_DataRequest
+REM was ackd to the Wimp, but not sent back to us.
+:
+DEF PROCclipboard_null_event
+
+REM Disable NULL events.
+
+ClipperAcceptNullPolls% = FALSE
+
+REM If this was an examine echange, then the clipboard owner must be an application
+REM (such as Ovation Pro) which acks the message but doesn't respond with a
+REM Message_DataSave when it receives a "native" type request. We then resend
+REM the request specifying plain text.
+
+IF ClipboardExamineMyRef% <> -1 THEN
+	ClipboardExamineMyRef% = -1
+
+	ClipboardCurrentOwnerTask% = -1
+	ClipboardCurrentType% = -1
+
+	PROCmain_wind_set_content("", ClipboardCurrentOwnerTask%, ClipboardCurrentType%)
+	PROCmain_wind_set_proto_message("NoClipboard")
+
+	PROCclipboard_examine(&FFF)
+ENDIF
 ENDPROC
 
 
