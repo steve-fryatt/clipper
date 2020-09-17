@@ -19,7 +19,7 @@ Building
 
 Clipper consists of a collection of un-tokenised BASIC, which must be assembled using the [SFTools build environment](https://github.com/steve-fryatt). It will be necessary to have suitable Linux system with a working installation of the [GCCSDK](http://www.riscos.info/index.php/GCCSDK) to be able to make use of this.
 
-To make Clipper, simply run
+With a suitable build environment set up, making Clipper is a matter of running
 
 	make
 
