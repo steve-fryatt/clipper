@@ -55,7 +55,7 @@ IF button% <> 4 THEN ENDPROC
 
 CASE icon% OF
 WHEN InfoWindEmailIcon%
-	PROCurl_launch("mailto:steve@stevefryatt.org.uk")
+	PROCurl_launch("mailto:info@stevefryatt.org.uk")
 WHEN InfoWindUrlIcon%
 	PROCurl_launch("http://www.stevefryatt.org.uk/software/clipboard/")
 ENDCASE
