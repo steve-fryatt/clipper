@@ -236,6 +236,15 @@ Third beta release.
 <li>Fall back to the unknown file icon when the Wimp pool doesn&rsquo;t contain a suitable icon for the clipboard contents (ticket&nbsp;#713).
 </list>
 
+
+<subhead title="Development Build">
+
+Development build for testing and feedback.
+
+<list>
+<li>Add missing ENDCASE in bounced message handling routine (Ticket&nbsp;#727).
+</list>
+
 </chapter>
 
 
