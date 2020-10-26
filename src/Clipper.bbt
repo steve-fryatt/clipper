@@ -166,7 +166,7 @@ ENDCASE
 ENDPROC
 
 
-REM Handle boinced Wimp messages.
+REM Handle bounced Wimp messages.
 REM
 REM \param message%	Pointer to the Wimp_Poll block.
 :
