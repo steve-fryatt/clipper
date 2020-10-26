@@ -701,9 +701,10 @@ REM
 REM \param file$	The file to be typed.
 :
 DEF PROCclipboard_type_file(file$)
-LOCAL text%, size%, handle%, end%, flags%, properties%, c%, message$
+LOCAL text%, size%, handle%, end%, flags%, control%, space%, c%, bit%, byte%, message$
 
-SYS "Territory_CharacterPropertyTable", -1, 0 TO properties%
+SYS "Territory_CharacterPropertyTable", -1, 0 TO control%
+SYS "Territory_CharacterPropertyTable", -1, 5 TO space%
 
 REM Open the file to be typed.
 
@@ -742,15 +743,19 @@ ENDIF
 
 REM Terminate the buffer.
 
-?end% = 13
+?end% = 0
 
 REM Type the characters in the buffer.
 
-WHILE ?text% <> 13
+WHILE ?text% > 0
 	c% = ?text%
+
+	bit% = 1 << (c% MOD 8)
+	byte% = c% DIV 8
+
 	text% += 1
 
-	IF (properties%?(c% DIV 8) AND (1 << (c% MOD 8))) = 0 THEN SYS "XWimp_ProcessKey", c%
+	IF ((control%?byte% AND bit%) = 0) OR ((space%?byte% AND bit%) <> 0) THEN SYS "XWimp_ProcessKey", c%
 ENDWHILE
 
 REM Release the memory buffer.
