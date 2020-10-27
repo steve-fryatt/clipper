@@ -68,7 +68,7 @@ Once <cite>Clipper</cite> is loaded, it will install an icon on the iconbar. Cli
 
 If you toggle the window size then you can see an extra box which indicates what <cite>Clipper</cite> is doing. This may be helpful for programmers trying to work out why their program doesn&rsquo;t work with <cite>Clipper</cite>. Note that the problem may well be <cite>Clipper</cite>&rsquo;s fault!
 
-If there is text on the clipboard, an <mouse>adjust</mouse> click on the iconbar icon will type it at the caret.
+If there is text on the clipboard, an <mouse>adjust</mouse> click on the iconbar icon will type it at the caret. Only those characters which are considered to be either not control characters or white space will be included in the text; content including newlines and carriage returns might not have the expected effects.
 
 </chapter>
 
@@ -242,6 +242,7 @@ Third beta release.
 Development build for testing and feedback.
 
 <list>
+<li>Include whitespace characters in typed content (Ticket&nbsp;#726).
 <li>Add missing ENDCASE in bounced message handling routine (Ticket&nbsp;#727).
 </list>
 
