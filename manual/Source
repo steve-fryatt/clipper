@@ -244,6 +244,7 @@ Development build for testing and feedback.
 <list>
 <li>Include whitespace characters in typed content (Ticket&nbsp;#726).
 <li>Add missing ENDCASE in bounced message handling routine (Ticket&nbsp;#727).
+<li>Remove an attempt to type the clipboard contents in the case of a direct save from another owner.
 </list>
 
 </chapter>

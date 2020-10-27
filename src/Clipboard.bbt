@@ -484,11 +484,10 @@ WHEN ClipboardDragSaveMyRef%
 		ClipboardSaveDestMyRef% = -1
 		PROCmain_wind_set_proto_handle_message("AskToLoad", ClipboardSaveDestinationTask%)
 	ELSE
-		REM A direct save, so we can ack the clipboard owner and finish.
+		REM A direct save, when "Save" is clicked in the dialogue and another
+		REM task owns the clipboard. We can ack the clipboard owner and finish.
 
 		PROCmain_wind_set_proto_handle_message("Accepted", message%!4)
-
-		PROCclipboard_type_file()
 
 		message%!12 = message%!8
 		message%!16 = 4 : REM Message_DataSaveAck
