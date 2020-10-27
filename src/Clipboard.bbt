@@ -460,7 +460,7 @@ CASE message%!12 OF
 WHEN ClipboardDragSaveMyRef%
 	REM The task that owns the clipboard has returned a Message_DataLoad
 	REM to us, so we now record the details to allow us to Ack it later
-	REM on, then pass the message on to the task to whhich we're trying
+	REM on, then pass the message on to the task to which we're trying
 	REM to save the clipboard.
 
 	IF ClipboardSaveDestinationTask% <> -1 THEN
