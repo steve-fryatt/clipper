@@ -237,9 +237,9 @@ Third beta release.
 </list>
 
 
-<subhead title="Development Build">
+<subhead title="Version 0.31 (27 October 2020)">
 
-Development build for testing and feedback.
+Update to third beta release.
 
 <list>
 <li>Include whitespace characters in typed content (Ticket&nbsp;#726).
