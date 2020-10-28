@@ -44,7 +44,7 @@ The global clipboard provides a way of transferring data between applications. Y
 
 <cite>Clipper</cite> allows you to save the current contents of the global clipboard, either to disc or to another application. You can also drag files from a filer window to <cite>Clipper</cite> to put that file on the clipboard, and type the clipboard contents to the caret.
 
-The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipper</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/software/clipboard/">http://www.stevefryatt.org.uk/software/clipboard/</link>.
+The <cite>IcnClipBrd</cite> module, which allows you to cut and paste in writeable icons using the global clipboard, is no longer supplied with <cite>Clipper</cite>, but is available from <link ref="http://www.stevefryatt.org.uk/risc-os/clipboard">http://www.stevefryatt.org.uk/risc-os/clipboard</link>.
 
 The <cite>Clipper</cite> utility was originally called <cite>Clipboard</cite> and written, along with the <cite>IcnClipBrd</cite> module, by Thomas Leonard. It was converted to 32-bit for use on RISC&nbsp;OS&nbsp;5 by myself (Stephen Fryatt), and was renamed <cite>Clipper</cite> in 2020 to resolve a clash with a legitimately-allocated application name. I would like to thank Thomas for allowing his code to be placed in the Public Domain; any problems encountered using the updated application and module are likely to be my fault and should be reported first to the address below.
 
@@ -262,7 +262,7 @@ Updates and Contacting Me
   address below.
 
   Any updates to the module will be made available on my website, at
-  http://www.stevefryatt.org.uk/software/clipboard/
+  http://www.stevefryatt.org.uk/risc-os/clipboard
 
   Stephen Fryatt
   email: info@stevefryatt.org.uk

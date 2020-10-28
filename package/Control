@@ -15,5 +15,5 @@ Description: Access the contents of the Global Clipboard
  Note that the Clipper utility does not provide cut, copy and paste in
  writeable icons on the desktop. For that, the IcnClipBrd utility (available
  in the IcnClipBrd package) is required.
-Homepage: http://www.stevefryatt.org.uk/software/clipboard/
+Homepage: http://www.stevefryatt.org.uk/risc-os/clipboard
 Components: Apps.Desktop.!Clipper (Movable)

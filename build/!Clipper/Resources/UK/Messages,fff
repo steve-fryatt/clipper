@@ -24,7 +24,7 @@ TaskName:Clipper
 
 TaskSpr:!Clipper
 
-SupportURL:http://www.stevefryatt.org.uk/software/clipboard/
+SupportURL:http://www.stevefryatt.org.uk/risc-os/clipboard
 
 URLFailed:Could not find an application to launch the given URL.
 BadClipFileErr:The clipboard file was not found, or was an invalid object.
