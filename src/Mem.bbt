@@ -30,8 +30,6 @@ REM as required if currently unused.
 REM Initialise the WimpSlot memory allocation routines.
 :
 DEF PROCmem_initialise
-LOCAL new_slot_size%
-
 MemSharedInUse% = FALSE
 
 REM Get the current WimpSlot size.
