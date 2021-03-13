@@ -245,6 +245,15 @@ Update to third beta release.
 <li>Remove an attempt to type the clipboard contents in the case of a direct save from another owner.
 </list>
 
+
+<subhead title="Test Build">
+
+Alpha release.
+
+<list>
+<li>Examine clipboard on Null events, to avoid clashes with other software doing the same thing.
+</list>
+
 </chapter>
 
 

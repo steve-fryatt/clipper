@@ -1,6 +1,6 @@
 REM >!Clipboard
 REM
-REM Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+REM Copyright 2020-2021, Stephen Fryatt (info@stevefryatt.org.uk)
 REM
 REM This file is part of Clipper:
 REM
@@ -84,13 +84,14 @@ REM We're not interested if this isn't a clipboard claim
 IF (message%!20 AND %100) = 0 THEN ENDPROC
 
 REM If the broadcast isn't from us, forget the current owner and
-REM enquire as to where the clipboard now is.
+REM enable null events so that we can enquire as to where the clipboard
+REM now is on the next null event.
 
 IF message%!4 <> ClipperTaskHandle% THEN
 	ClipboardCurrentOwnerTask% = -1
 	ClipboardCurrentType% = -1
 	ClipboardCurrentFile$ = ""
-	PROCclipboard_examine(-1)
+	ClipperAcceptNullPolls% = TRUE
 ENDIF
 ENDPROC
 
@@ -106,10 +107,14 @@ REM We're not interested if this isn't the clipboard owner.
 
 IF message%!4 <> ClipboardCurrentOwnerTask% THEN ENDPROC
 
+REM Forget the current clipboard owner and enable null events so
+REM that we can enquire as to where the clipboard now is on the next
+REM null event.
+
 ClipboardCurrentOwnerTask% = -1
 ClipboardCurrentType% = -1
 ClipboardCurrentFile$ = ""
-PROCclipboard_examine(-1)
+ClipperAcceptNullPolls% = TRUE
 ENDPROC
 
 
@@ -654,12 +659,13 @@ ENDPROC
 
 
 REM Handle Null Events from the Wimp, which are enabled when we're enquiring
-REM for a clipboard owner. If we receive one, then the Message_DataRequest
-REM was ackd to the Wimp, but not sent back to us.
+REM for a clipboard owner. If we receive one, then the either we've seen a
+REM reason for sending out a Message_DataRequest, or a Message_DataRequest
+REM that we sent was ackd to the Wimp, but not sent back to us.
 :
 DEF PROCclipboard_null_event
 
-REM Disable NULL events.
+REM Disable Null events.
 
 ClipperAcceptNullPolls% = FALSE
 
@@ -667,6 +673,8 @@ REM If this was an examine echange, then the clipboard owner must be an applicat
 REM (such as Ovation Pro) which acks the message but doesn't respond with a
 REM Message_DataSave when it receives a "native" type request. We then resend
 REM the request specifying plain text.
+REM
+REM If not, then we've seen a Message_ClaimEntity and need to re-examine the clipboard.
 
 IF ClipboardExamineMyRef% <> -1 THEN
 	ClipboardExamineMyRef% = -1
@@ -678,6 +686,8 @@ IF ClipboardExamineMyRef% <> -1 THEN
 	PROCmain_wind_set_proto_message("NoClipboard")
 
 	PROCclipboard_examine(&FFF)
+ELSE
+	PROCclipboard_examine(-1)
 ENDIF
 ENDPROC
 
