@@ -10,7 +10,7 @@
 =============================================================================
 Clipper - A Global Clipboard utility                             Version $$version$$
 
-(c) Thomas Leonard, 1999-2004, Stephen Fryatt, 2004-2020 $$date$$
+(c) Thomas Leonard, 1999-2004, Stephen Fryatt, 2004-2022 $$date$$
 =============================================================================
 
 </literal>
@@ -246,9 +246,9 @@ Update to third beta release.
 </list>
 
 
-<subhead title="Test Build">
+<subhead title="Version 0.32 (20 March 2020)">
 
-Alpha release.
+Update to third beta release.
 
 <list>
 <li>Examine clipboard on Null events, to avoid clashes with other software doing the same thing.
