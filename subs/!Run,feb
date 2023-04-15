@@ -1,6 +1,6 @@
 | >!Run
 |
-| Copyright 2020, Stephen Fryatt (info@stevefryatt.org.uk)
+| Copyright 2020-2023, Stephen Fryatt (info@stevefryatt.org.uk)
 |
 | This file is part of Clipper:
 |
@@ -21,6 +21,13 @@
 |
 | See the Licence for the specific language governing
 | permissions and limitations under the Licence.
+
+Set Clipper$Help <Obey$Dir>.!Help
+Set Clipper$Version "{{VERSION}}"
+Set Clipper$Web "http://www.stevefryatt.org.uk/risc-os/clipboard/"
+Set Clipper$Title "Clipper"
+Set Clipper$Publisher "Stephen Fryatt"
+Set Clipper$Description "A Global Clipboard utility"
 
 Set Clipper$Dir <Obey$Dir>
 

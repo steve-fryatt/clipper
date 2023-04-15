@@ -14,10 +14,17 @@
 				"kind": "build",
 				"isDefault": true
 			},
-	//		"presentation": {
-	//			"reveal": "silent"
-	//		},
-	//		"problemMatcher": "$msCompile"
+			"problemMatcher": {
+				"owner": "bbcbasic",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+				  "regexp": "^(Warning|Error): (.*) at line (\\d+) of (.*)$",
+				  "file": 4,
+				  "line": 3,
+				  "severity": 1,
+				  "message": 2
+				}
+			}
 		},
 		{
 			"label": "clean",
@@ -30,9 +37,6 @@
 				"clean",
 			],
 			"group": "build",
-	//		"presentation": {
-	//			"reveal": "silent"
-	//		},
 	//		"problemMatcher": "$msCompile"
 		},
 		{
@@ -47,9 +51,6 @@
 				"VERSION=${input:version}"
 			],
 			"group": "build",
-	//		"presentation": {
-	//			"reveal": "silent"
-	//		},
 	//		"problemMatcher": "$msCompile"
 		}
 	],

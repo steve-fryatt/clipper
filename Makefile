@@ -39,4 +39,6 @@ SRCS := Clipper.bbt	\
 	Mem.bbt		\
 	Types.bbt
 
+SUBS := !Run,feb
+
 include $(SFTOOLS_MAKE)/Basic
